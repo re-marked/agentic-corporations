@@ -42,8 +42,8 @@ export function ChatView({ channel, members, messagesPath, daemonClient, onSwitc
     return () => clearTimeout(timer);
   }, [thinking]);
 
-  useInput((input, key) => {
-    if (key.ctrl && input === 'k') {
+  useInput((_input, key) => {
+    if (key.tab) {
       onSwitchChannel?.();
     }
   });
@@ -65,7 +65,7 @@ export function ChatView({ channel, members, messagesPath, daemonClient, onSwitc
     <Box flexDirection="column" flexGrow={1}>
       <Box borderStyle="single" borderColor="blue" paddingX={1}>
         <Text bold color="blue"># {channel.name}</Text>
-        <Text dimColor>  Ctrl+K to switch</Text>
+        <Text dimColor>  Tab to switch</Text>
       </Box>
       <Box flexDirection="column" flexGrow={1} paddingX={1} paddingY={1}>
         <MessageList messages={messages} members={members} />
