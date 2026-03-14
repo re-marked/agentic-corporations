@@ -20,36 +20,27 @@ interface Props {
 export function ChatView({ channel, members, messagesPath, daemonClient, onSwitchChannel }: Props) {
   const messages = useMessages(messagesPath);
   const [sending, setSending] = useState(false);
-  const [thinkingSince, setThinkingSince] = useState<number | null>(null);
-  const [timedOut, setTimedOut] = useState(false);
+  const [thinking, setThinking] = useState(false);
+  const lastMsgCount = useRef(messages.length);
 
-  const lastMsg = messages[messages.length - 1];
-  const founder = members.find((m) => m.rank === 'owner');
-  const lastIsFromUser = lastMsg && founder && lastMsg.senderId === founder.id;
-
-  // Track when we start waiting for a response
-  const prevLastMsgId = useRef<string | null>(null);
+  // When a new message arrives from someone else, stop thinking
   useEffect(() => {
-    if (lastMsg && lastMsg.id !== prevLastMsgId.current) {
-      prevLastMsgId.current = lastMsg.id;
-      if (lastIsFromUser) {
-        setThinkingSince(Date.now());
-        setTimedOut(false);
-      } else {
-        setThinkingSince(null);
-        setTimedOut(false);
+    if (messages.length > lastMsgCount.current) {
+      const newMsg = messages[messages.length - 1];
+      const founder = members.find((m) => m.rank === 'owner');
+      if (newMsg && founder && newMsg.senderId !== founder.id) {
+        setThinking(false);
       }
     }
-  }, [lastMsg?.id, lastIsFromUser]);
+    lastMsgCount.current = messages.length;
+  }, [messages.length]);
 
   // Timeout the spinner
   useEffect(() => {
-    if (!thinkingSince) return;
-    const timer = setTimeout(() => setTimedOut(true), THINKING_TIMEOUT_MS);
+    if (!thinking) return;
+    const timer = setTimeout(() => setThinking(false), THINKING_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [thinkingSince]);
-
-  const showSpinner = lastIsFromUser && thinkingSince && !timedOut && !sending;
+  }, [thinking]);
 
   useInput((input, key) => {
     if (key.ctrl && input === 'k') {
@@ -60,7 +51,10 @@ export function ChatView({ channel, members, messagesPath, daemonClient, onSwitc
   const handleSend = useCallback(async (text: string) => {
     setSending(true);
     try {
-      await daemonClient.sendMessage(channel.id, text);
+      const { dispatching } = await daemonClient.sendMessage(channel.id, text);
+      if (dispatching) {
+        setThinking(true);
+      }
     } catch (err) {
       // Message send failed
     }
@@ -75,7 +69,7 @@ export function ChatView({ channel, members, messagesPath, daemonClient, onSwitc
       </Box>
       <Box flexDirection="column" flexGrow={1} paddingX={1} paddingY={1}>
         <MessageList messages={messages} members={members} />
-        {showSpinner && (
+        {thinking && (
           <Box gap={1} marginTop={1}>
             <Text color="cyan"><Spinner type="dots" /></Text>
             <Text dimColor>Thinking...</Text>

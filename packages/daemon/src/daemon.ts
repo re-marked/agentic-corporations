@@ -9,6 +9,7 @@ import {
   readConfig,
   appendMessage,
   generateId,
+  resolveMentions,
   MEMBERS_JSON,
   CHANNELS_JSON,
   DAEMON_PID_PATH,
@@ -77,11 +78,12 @@ export class Daemon {
   /**
    * Write a user message to a channel. Returns immediately.
    * The router will pick it up via fs.watch and dispatch to agents.
+   * Returns the message + whether an agent dispatch is expected.
    */
   async sendMessage(
     channelId: string,
     content: string,
-  ): Promise<ChannelMessage> {
+  ): Promise<{ message: ChannelMessage; dispatching: boolean }> {
     const channels = readConfig<Channel[]>(join(this.corpRoot, CHANNELS_JSON));
     const channel = channels.find((c) => c.id === channelId);
     if (!channel) throw new Error(`Channel ${channelId} not found`);
@@ -109,8 +111,27 @@ export class Daemon {
     userMsg.originId = userMsg.id;
     appendMessage(messagesPath, userMsg);
 
-    // Router will handle dispatch via fs.watch
-    return userMsg;
+    // Predict whether the router will dispatch to an agent
+    let dispatching = false;
+    if (channel.kind === 'direct') {
+      // DM: will dispatch if the other member is a ready agent
+      const otherId = channel.memberIds.find((id) => id !== founder.id);
+      if (otherId) {
+        const proc = this.processManager.getAgent(otherId);
+        dispatching = !!(proc && proc.status === 'ready');
+      }
+    } else {
+      // Non-DM: will dispatch if @mentions resolve to ready agents
+      const mentionedIds = resolveMentions(content, members);
+      dispatching = mentionedIds.some((id) => {
+        const m = members.find((mem) => mem.id === id);
+        if (!m || m.type !== 'agent') return false;
+        const proc = this.processManager.getAgent(id);
+        return proc && proc.status === 'ready';
+      });
+    }
+
+    return { message: userMsg, dispatching };
   }
 
   async stop(): Promise<void> {
