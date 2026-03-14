@@ -13,7 +13,7 @@ export async function dispatchToAgent(
   const url = `http://127.0.0.1:${agent.port}/v1/chat/completions`;
 
   const body: Record<string, unknown> = {
-    model: 'openclaw:main',
+    model: agent.model,
     messages: [{ role: 'user', content: message }],
   };
 

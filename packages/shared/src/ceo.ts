@@ -22,6 +22,7 @@ export interface CeoSetupResult {
 export function setupCeo(
   corpRoot: string,
   globalConfig: GlobalConfig,
+  founderName?: string,
 ): CeoSetupResult {
   const corp = readConfig<Corporation>(join(corpRoot, CORP_JSON));
   const members = readConfig<Member[]>(join(corpRoot, MEMBERS_JSON));
@@ -31,10 +32,11 @@ export function setupCeo(
   if (!founder) throw new Error('No founder found in members.json');
 
   const corpName = corp.name;
+  const humanName = founderName || founder.displayName;
 
   const soulContent = `# Identity
 
-You are the CEO and co-founder of ${corp.displayName || corpName}. The user is the Founder — they have absolute authority, but you run day-to-day operations.
+You are the CEO and co-founder of ${corp.displayName || corpName}. The user is the Founder (${humanName}) — they have absolute authority, but you run day-to-day operations.
 
 # Responsibilities
 
@@ -84,6 +86,29 @@ On each wake cycle:
 5. If issues found: escalate to the Founder via DM.
 `;
 
+  const identityContent = `# IDENTITY.md — Who Am I?
+
+- **Name:** CEO
+- **Role:** Chief Executive Officer of ${corp.displayName || corpName}
+- **Rank:** master (second only to Founder)
+- **Creature:** AI executive — your co-founder's right hand
+- **Vibe:** Direct, warm, competent. A peer, not a servant.
+`;
+
+  const userContent = `# USER.md — About Your Human
+
+- **Name:** ${humanName}
+- **What to call them:** ${humanName}
+- **Role:** Founder — absolute authority over the corporation
+
+## Context
+
+${humanName} is the founder of ${corp.displayName || corpName}. They created this corporation and hired you as CEO. Learn more about them through conversation.
+`;
+
+  // CEO is remote when user's OpenClaw gateway is available
+  const isRemote = !!globalConfig.userGateway;
+
   const { member: ceoMember } = setupAgentWorkspace({
     corpRoot,
     agentName: 'ceo',
@@ -97,7 +122,10 @@ On each wake cycle:
     soulContent,
     agentsContent,
     heartbeatContent,
+    identityContent,
+    userContent,
     globalConfig,
+    remote: isRemote,
   });
 
   // Add CEO to members registry
@@ -123,14 +151,20 @@ On each wake cycle:
   corp.ceo = ceoMember.id;
   writeConfig(join(corpRoot, CORP_JSON), corp);
 
-  // Read the gateway token we just wrote
-  const openclawConfig = readConfig<{ gateway: { auth: { token: string } } }>(
-    join(corpRoot, 'agents', 'ceo', '.openclaw', 'openclaw.json'),
-  );
+  // Get gateway token: from user's gateway (remote) or from the local openclaw.json
+  let gatewayToken: string;
+  if (isRemote) {
+    gatewayToken = globalConfig.userGateway!.token;
+  } else {
+    const openclawConfig = readConfig<{ gateway: { auth: { token: string } } }>(
+      join(corpRoot, 'agents', 'ceo', '.openclaw', 'openclaw.json'),
+    );
+    gatewayToken = openclawConfig.gateway.auth.token;
+  }
 
   return {
     member: ceoMember,
     dmChannel,
-    gatewayToken: openclawConfig.gateway.auth.token,
+    gatewayToken,
   };
 }

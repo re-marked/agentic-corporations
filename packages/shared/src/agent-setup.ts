@@ -22,7 +22,11 @@ export interface AgentSetupOpts {
   soulContent: string;
   agentsContent: string;
   heartbeatContent: string;
+  identityContent?: string;
+  userContent?: string;
   globalConfig: GlobalConfig;
+  /** If true, skip creating .openclaw/ state dir (agent uses an external gateway) */
+  remote?: boolean;
 }
 
 export interface AgentSetupResult {
@@ -45,7 +49,10 @@ export function setupAgentWorkspace(opts: AgentSetupOpts): AgentSetupResult {
     soulContent,
     agentsContent,
     heartbeatContent,
+    identityContent,
+    userContent,
     globalConfig,
+    remote,
   } = opts;
 
   const agentRelDir = `agents/${agentName}/`;
@@ -62,6 +69,12 @@ export function setupAgentWorkspace(opts: AgentSetupOpts): AgentSetupResult {
   writeFileSync(join(agentAbsDir, 'AGENTS.md'), agentsContent, 'utf-8');
   writeFileSync(join(agentAbsDir, 'MEMORY.md'), '# Memory\n\nNo memories yet.\n', 'utf-8');
   writeFileSync(join(agentAbsDir, 'HEARTBEAT.md'), heartbeatContent, 'utf-8');
+  if (identityContent) {
+    writeFileSync(join(agentAbsDir, 'IDENTITY.md'), identityContent, 'utf-8');
+  }
+  if (userContent) {
+    writeFileSync(join(agentAbsDir, 'USER.md'), userContent, 'utf-8');
+  }
 
   // Agent config
   const agentConfig: AgentConfig = {
@@ -75,61 +88,63 @@ export function setupAgentWorkspace(opts: AgentSetupOpts): AgentSetupResult {
   };
   writeConfig(join(agentAbsDir, 'config.json'), agentConfig);
 
-  // OpenClaw state directory
-  const openclawStateDir = join(agentAbsDir, '.openclaw');
-  mkdirSync(join(openclawStateDir, 'agents', 'main', 'agent'), { recursive: true });
+  // OpenClaw state directory (only for locally-spawned agents, not remote)
+  if (!remote) {
+    const openclawStateDir = join(agentAbsDir, '.openclaw');
+    mkdirSync(join(openclawStateDir, 'agents', 'main', 'agent'), { recursive: true });
 
-  // Generate a unique gateway token for this agent
-  const gatewayToken = generateId() + generateId();
+    // Generate a unique gateway token for this agent
+    const gatewayToken = generateId() + generateId();
 
-  // openclaw.json
-  const openclawConfig = {
-    auth: {
+    // openclaw.json
+    const openclawConfig = {
+      auth: {
+        profiles: {
+          [`${provider}:default`]: {
+            provider,
+            mode: 'token',
+          },
+        },
+      },
+      agents: {
+        defaults: {
+          model: { primary: `${provider}/${model}` },
+          workspace: agentAbsDir.replace(/\\/g, '/'),
+          compaction: { mode: 'safeguard' },
+          verboseDefault: 'off',
+          blockStreamingDefault: 'on',
+        },
+      },
+      gateway: {
+        mode: 'local',
+        bind: 'loopback',
+        auth: { mode: 'token', token: gatewayToken },
+        http: {
+          endpoints: {
+            chatCompletions: { enabled: true },
+          },
+        },
+      },
+    };
+    writeConfig(join(openclawStateDir, 'openclaw.json'), openclawConfig);
+
+    // auth-profiles.json — inject API key from global config
+    const apiKey = globalConfig.apiKeys[provider as keyof typeof globalConfig.apiKeys];
+    const authProfiles = {
+      version: 1,
       profiles: {
         [`${provider}:default`]: {
+          type: 'token',
           provider,
-          mode: 'token',
+          token: apiKey ?? '',
         },
       },
-    },
-    agents: {
-      defaults: {
-        model: { primary: `${provider}/${model}` },
-        workspace: agentAbsDir.replace(/\\/g, '/'),
-        compaction: { mode: 'safeguard' },
-        verboseDefault: 'off',
-        blockStreamingDefault: 'on',
-      },
-    },
-    gateway: {
-      mode: 'local',
-      bind: 'loopback',
-      auth: { mode: 'token', token: gatewayToken },
-      http: {
-        endpoints: {
-          chatCompletions: { enabled: true },
-        },
-      },
-    },
-  };
-  writeConfig(join(openclawStateDir, 'openclaw.json'), openclawConfig);
-
-  // auth-profiles.json — inject API key from global config
-  const apiKey = globalConfig.apiKeys[provider as keyof typeof globalConfig.apiKeys];
-  const authProfiles = {
-    version: 1,
-    profiles: {
-      [`${provider}:default`]: {
-        type: 'token',
-        provider,
-        token: apiKey ?? '',
-      },
-    },
-  };
-  writeConfig(
-    join(openclawStateDir, 'agents', 'main', 'agent', 'auth-profiles.json'),
-    authProfiles,
-  );
+    };
+    writeConfig(
+      join(openclawStateDir, 'agents', 'main', 'agent', 'auth-profiles.json'),
+      authProfiles,
+    );
+  }
 
   // Member entry
   const member: Member = {
