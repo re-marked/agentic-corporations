@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
 import Spinner from 'ink-spinner';
 import type { Channel, Member } from '@agentcorp/shared';
@@ -6,6 +6,8 @@ import { MessageList } from '../components/message-list.js';
 import { MessageInput } from '../components/message-input.js';
 import { useMessages } from '../hooks/use-messages.js';
 import type { DaemonClient } from '../lib/daemon-client.js';
+
+const THINKING_TIMEOUT_MS = 30_000;
 
 interface Props {
   channel: Channel;
@@ -18,11 +20,36 @@ interface Props {
 export function ChatView({ channel, members, messagesPath, daemonClient, onSwitchChannel }: Props) {
   const messages = useMessages(messagesPath);
   const [sending, setSending] = useState(false);
+  const [thinkingSince, setThinkingSince] = useState<number | null>(null);
+  const [timedOut, setTimedOut] = useState(false);
 
-  // Show thinking indicator only in DM channels when last message is from user
   const lastMsg = messages[messages.length - 1];
   const founder = members.find((m) => m.rank === 'owner');
-  const waiting = channel.kind === 'direct' && lastMsg && founder && lastMsg.senderId === founder.id;
+  const lastIsFromUser = lastMsg && founder && lastMsg.senderId === founder.id;
+
+  // Track when we start waiting for a response
+  const prevLastMsgId = useRef<string | null>(null);
+  useEffect(() => {
+    if (lastMsg && lastMsg.id !== prevLastMsgId.current) {
+      prevLastMsgId.current = lastMsg.id;
+      if (lastIsFromUser) {
+        setThinkingSince(Date.now());
+        setTimedOut(false);
+      } else {
+        setThinkingSince(null);
+        setTimedOut(false);
+      }
+    }
+  }, [lastMsg?.id, lastIsFromUser]);
+
+  // Timeout the spinner
+  useEffect(() => {
+    if (!thinkingSince) return;
+    const timer = setTimeout(() => setTimedOut(true), THINKING_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [thinkingSince]);
+
+  const showSpinner = lastIsFromUser && thinkingSince && !timedOut && !sending;
 
   useInput((input, key) => {
     if (key.ctrl && input === 'k') {
@@ -48,7 +75,7 @@ export function ChatView({ channel, members, messagesPath, daemonClient, onSwitc
       </Box>
       <Box flexDirection="column" flexGrow={1} paddingX={1} paddingY={1}>
         <MessageList messages={messages} members={members} />
-        {waiting && !sending && (
+        {showSpinner && (
           <Box gap={1} marginTop={1}>
             <Text color="cyan"><Spinner type="dots" /></Text>
             <Text dimColor>Thinking...</Text>
