@@ -7,6 +7,7 @@ import {
   readConfig,
   readNewLines,
   getFileSize,
+  tailMessages,
   appendMessage,
   generateId,
   resolveMentions,
@@ -191,12 +192,22 @@ export class MessageRouter {
     // Track cooldown for all dispatches
     this.lastDispatch.set(targetId, Date.now());
 
-    // Build context
-    const context = this.buildContext(target, channel, members);
+    // Load recent channel history for context
+    const msgPath = join(this.daemon.corpRoot, channel.path, MESSAGES_JSONL);
+    const recent = tailMessages(msgPath, 50);
+    const recentHistory = recent.map((m) => {
+      const s = members.find((mem) => mem.id === m.senderId);
+      const name = s?.displayName ?? 'Unknown';
+      const rank = s?.rank ?? '';
+      const time = new Date(m.timestamp).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', hour12: false });
+      return `[${name} (${rank})] ${time}: ${m.content}`;
+    });
 
-    // Prefix message with sender name so the agent knows who's talking
-    const senderLabel = sender.displayName;
-    const messageContent = `[${senderLabel}]: ${msg.content}`;
+    // Build context with history
+    const context = this.buildContext(target, channel, members, recentHistory);
+
+    // Send the triggering message content (history is in system message)
+    const messageContent = msg.content;
 
     try {
       const result = await dispatchToAgent(
@@ -234,6 +245,7 @@ export class MessageRouter {
     targetAgent: Member,
     channel: Channel,
     members: Member[],
+    recentHistory: string[] = [],
   ): DispatchContext {
     const corpRootDisplay = this.daemon.corpRoot.replace(/\\/g, '/');
     const agentDirDisplay = targetAgent.agentDir
@@ -258,6 +270,7 @@ export class MessageRouter {
       channelName: channel.name,
       channelMembers,
       corpMembers,
+      recentHistory,
     };
   }
 }
