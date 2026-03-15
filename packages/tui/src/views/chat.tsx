@@ -1,11 +1,21 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
 import Spinner from 'ink-spinner';
-import { type Channel, type Member, readConfig, MEMBERS_JSON } from '@agentcorp/shared';
+import {
+  type Channel,
+  type Member,
+  type ChannelMessage,
+  readConfig,
+  appendMessage,
+  generateId,
+  MEMBERS_JSON,
+  MESSAGES_JSONL,
+} from '@agentcorp/shared';
 import { join } from 'node:path';
 import { MessageList } from '../components/message-list.js';
 import { MessageInput } from '../components/message-input.js';
 import { useMessages } from '../hooks/use-messages.js';
+import { HireWizard } from './hire-wizard.js';
 import type { DaemonClient } from '../lib/daemon-client.js';
 
 const THINKING_TIMEOUT_MS = 30_000;
@@ -24,6 +34,7 @@ export function ChatView({ channel, members: initialMembers, messagesPath, daemo
   const [sending, setSending] = useState(false);
   const [thinking, setThinking] = useState(false);
   const [members, setMembers] = useState(initialMembers);
+  const [showHireWizard, setShowHireWizard] = useState(false);
   const lastMsgCount = useRef(messages.length);
 
   // Refresh members when new messages arrive (new agents may have been hired)
@@ -60,42 +71,46 @@ export function ChatView({ channel, members: initialMembers, messagesPath, daemo
   }, [thinking]);
 
   useInput((input, key) => {
+    if (showHireWizard) return;
     if (key.tab || input === '\t') {
       onSwitchChannel?.();
     }
   });
 
+  const writeSystemMessage = (content: string) => {
+    const sysMsg: ChannelMessage = {
+      id: generateId(),
+      channelId: channel.id,
+      senderId: 'system',
+      threadId: null,
+      content,
+      kind: 'system',
+      mentions: [],
+      metadata: null,
+      depth: 0,
+      originId: '',
+      timestamp: new Date().toISOString(),
+    };
+    sysMsg.originId = sysMsg.id;
+    appendMessage(join(corpRoot, channel.path, MESSAGES_JSONL), sysMsg);
+  };
+
+  const handleHired = (agentName: string, displayName: string) => {
+    // Write system message to current channel
+    writeSystemMessage(`${displayName} has been hired as ${agentName}. You can now @mention them.`);
+    // Refresh members
+    try {
+      const fresh = readConfig<Member[]>(join(corpRoot, MEMBERS_JSON));
+      setMembers(fresh);
+    } catch {}
+    // Close wizard after a moment
+    setTimeout(() => setShowHireWizard(false), 1500);
+  };
+
   const handleSend = useCallback(async (text: string) => {
-    // Handle /hire command: /hire <agentName> "<displayName>" <rank> [description]
-    const hireMatch = text.match(/^\/hire\s+(\S+)\s+"([^"]+)"\s+(leader|worker|subagent)(?:\s+(.+))?$/);
-    if (hireMatch) {
-      setSending(true);
-      const founder = members.find((m) => m.rank === 'owner');
-      if (!founder) {
-        setSending(false);
-        return;
-      }
-      try {
-        const [, agentName, displayName, rank, description] = hireMatch;
-        const soulContent = description
-          ? `# Identity\n\nYou are ${displayName}. ${description}\n\n# Communication Style\n\nClear, professional, focused on results.`
-          : undefined;
-        await daemonClient.hireAgent({
-          creatorId: founder.id,
-          agentName: agentName!,
-          displayName: displayName!,
-          rank: rank!,
-          soulContent,
-        });
-        // Refresh members
-        try {
-          const fresh = readConfig<Member[]>(join(corpRoot, MEMBERS_JSON));
-          setMembers(fresh);
-        } catch {}
-      } catch (err) {
-        console.error('[tui] Hire failed:', err);
-      }
-      setSending(false);
+    // /hire opens the wizard
+    if (text.trim().toLowerCase() === '/hire') {
+      setShowHireWizard(true);
       return;
     }
 
@@ -109,13 +124,28 @@ export function ChatView({ channel, members: initialMembers, messagesPath, daemo
       // Message send failed
     }
     setSending(false);
-  }, [channel.id, daemonClient, members, corpRoot]);
+  }, [channel.id, daemonClient]);
+
+  const founder = members.find((m) => m.rank === 'owner');
+
+  if (showHireWizard) {
+    return (
+      <Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
+        <HireWizard
+          daemonClient={daemonClient}
+          founderId={founder?.id ?? ''}
+          onClose={() => setShowHireWizard(false)}
+          onHired={handleHired}
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box flexDirection="column" flexGrow={1}>
       <Box borderStyle="single" borderColor="blue" paddingX={1}>
         <Text bold color="blue"># {channel.name}</Text>
-        <Text dimColor>  Tab to switch</Text>
+        <Text dimColor>  Tab to switch  /hire to add agents</Text>
       </Box>
       <Box flexDirection="column" flexGrow={1} paddingX={1} paddingY={1}>
         <MessageList messages={messages} members={members} />
@@ -129,7 +159,7 @@ export function ChatView({ channel, members: initialMembers, messagesPath, daemo
       <MessageInput
         onSend={handleSend}
         disabled={sending}
-        placeholder="Type a message..."
+        placeholder="Type a message... (/hire to add agents)"
       />
     </Box>
   );
