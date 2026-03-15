@@ -244,6 +244,7 @@ export function OnboardingView() {
         members={members}
         messagesPath={messagesPath}
         daemonClient={daemonClient}
+        corpRoot={corpRoot}
         onSwitchChannel={() => setShowSwitcher(true)}
       />
     );

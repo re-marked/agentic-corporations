@@ -131,6 +131,7 @@ function ResumeView({ corpPath }: { corpPath: string }) {
         members={members}
         messagesPath={messagesPath}
         daemonClient={client}
+        corpRoot={corpPath}
         onSwitchChannel={() => setShowSwitcher(true)}
       />
     );

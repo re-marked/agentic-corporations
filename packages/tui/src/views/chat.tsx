@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
 import Spinner from 'ink-spinner';
-import type { Channel, Member } from '@agentcorp/shared';
+import { type Channel, type Member, readConfig, MEMBERS_JSON } from '@agentcorp/shared';
+import { join } from 'node:path';
 import { MessageList } from '../components/message-list.js';
 import { MessageInput } from '../components/message-input.js';
 import { useMessages } from '../hooks/use-messages.js';
@@ -14,14 +15,30 @@ interface Props {
   members: Member[];
   messagesPath: string;
   daemonClient: DaemonClient;
+  corpRoot: string;
   onSwitchChannel?: () => void;
 }
 
-export function ChatView({ channel, members, messagesPath, daemonClient, onSwitchChannel }: Props) {
+export function ChatView({ channel, members: initialMembers, messagesPath, daemonClient, corpRoot, onSwitchChannel }: Props) {
   const messages = useMessages(messagesPath);
   const [sending, setSending] = useState(false);
   const [thinking, setThinking] = useState(false);
+  const [members, setMembers] = useState(initialMembers);
   const lastMsgCount = useRef(messages.length);
+
+  // Refresh members when new messages arrive (new agents may have been hired)
+  useEffect(() => {
+    if (messages.length > lastMsgCount.current) {
+      try {
+        const fresh = readConfig<Member[]>(join(corpRoot, MEMBERS_JSON));
+        if (fresh.length !== members.length) {
+          setMembers(fresh);
+        }
+      } catch {
+        // Non-fatal
+      }
+    }
+  }, [messages.length]);
 
   // When a new message arrives from someone else, stop thinking
   useEffect(() => {
