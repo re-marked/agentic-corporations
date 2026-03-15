@@ -168,19 +168,30 @@ export function MessageInput({ onSend, disabled, placeholder }: Props) {
     }
   });
 
+  // Show command hint when typing something that looks like /hire
+  const isTypingHire = !disabled && /^\/(h(i(r(e)?)?)?)?$/i.test(value.trim());
+
   return (
-    <Box borderStyle="single" borderColor={disabled ? 'gray' : 'white'} paddingX={1}>
-      <Text bold color="green">&gt; </Text>
-      {disabled ? (
-        <Text dimColor>{placeholder ?? 'Waiting...'}</Text>
-      ) : value.length === 0 ? (
-        <>
-          <Text inverse> </Text>
-          <Text dimColor>{placeholder ?? 'Type a message...'}</Text>
-        </>
-      ) : (
-        renderInputText(value, cursor, hueOffset, true)
+    <Box flexDirection="column">
+      {isTypingHire && (
+        <Box paddingX={2}>
+          <Text color="magenta" bold>/hire</Text>
+          <Text dimColor> — open the agent hiring wizard (Enter to confirm)</Text>
+        </Box>
       )}
+      <Box borderStyle="single" borderColor={disabled ? 'gray' : 'white'} paddingX={1}>
+        <Text bold color="green">&gt; </Text>
+        {disabled ? (
+          <Text dimColor>{placeholder ?? 'Waiting...'}</Text>
+        ) : value.length === 0 ? (
+          <>
+            <Text inverse> </Text>
+            <Text dimColor>{placeholder ?? 'Type a message...'}</Text>
+          </>
+        ) : (
+          renderInputText(value, cursor, hueOffset, true)
+        )}
+      </Box>
     </Box>
   );
 }
