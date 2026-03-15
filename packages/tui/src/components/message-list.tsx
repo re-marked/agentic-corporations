@@ -35,7 +35,8 @@ function hslToHex(h: number, s: number, l: number): string {
 }
 
 /** Split message content into plain text and @mention segments. */
-function renderContent(content: string, members: Map<string, Member>) {
+function renderContent(content: string | undefined | null, members: Map<string, Member>) {
+  if (!content) return <Text wrap="wrap">{''}</Text>;
   const parts: React.ReactNode[] = [];
   const mentionRegex = /@"([^"]+)"|@(\S+)/g;
   let lastIndex = 0;
