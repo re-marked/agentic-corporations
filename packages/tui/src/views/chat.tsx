@@ -42,8 +42,8 @@ export function ChatView({ channel, members, messagesPath, daemonClient, onSwitc
     return () => clearTimeout(timer);
   }, [thinking]);
 
-  useInput((_input, key) => {
-    if (key.tab) {
+  useInput((input, key) => {
+    if (key.tab || input === '\t') {
       onSwitchChannel?.();
     }
   });
