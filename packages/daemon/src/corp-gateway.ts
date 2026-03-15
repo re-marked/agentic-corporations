@@ -12,6 +12,7 @@ export interface CorpGatewayAgent {
   id: string;
   name: string;
   workspace: string;
+  agentDir?: string;
   model?: { primary: string };
 }
 
