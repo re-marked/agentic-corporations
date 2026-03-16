@@ -223,7 +223,7 @@ export class MessageRouter {
         agentProc,
         messageContent,
         context,
-        `channel-${channel.id}`,
+        `channel-${channel.id}-${msg.id}`,
       );
 
       // Write agent response to JSONL
