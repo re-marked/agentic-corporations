@@ -38,7 +38,7 @@ function hslToHex(h: number, s: number, l: number): string {
 function renderContent(content: string | undefined | null, members: Map<string, Member>) {
   if (!content) return <Text wrap="wrap">{''}</Text>;
   const parts: React.ReactNode[] = [];
-  const mentionRegex = /@"([^"]+)"|@(\S+)/g;
+  const mentionRegex = /@"([^"]+)"|@([A-Za-z0-9][\w-]*)/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 

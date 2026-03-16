@@ -207,7 +207,7 @@ export class MessageRouter {
     const context = this.buildContext(target, channel, members, recentHistory);
 
     // If message is just a bare @mention, use the previous message as content
-    const strippedContent = msg.content.replace(/@"[^"]+"|@\S+/g, '').trim();
+    const strippedContent = msg.content.replace(/@"[^"]+"|@[A-Za-z0-9][\w-]*/g, '').trim();
     let messageContent = msg.content;
     if (!strippedContent && recent.length >= 2) {
       // Find the last message before the bare mention

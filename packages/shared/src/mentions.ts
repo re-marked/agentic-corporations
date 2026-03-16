@@ -1,7 +1,7 @@
 import type { Member } from './types/index.js';
 
-// Matches @Name or @"Multi Word Name"
-const MENTION_RE = /@"([^"]+)"|@(\S+)/g;
+// Matches @Name or @"Multi Word Name" — strips trailing punctuation from bare mentions
+const MENTION_RE = /@"([^"]+)"|@([A-Za-z0-9][\w-]*)/g;
 
 export function extractMentionNames(content: string): string[] {
   const names: string[] = [];

@@ -35,7 +35,7 @@ function AnimatedRainbow({ children, offset }: { children: string; offset: numbe
 function renderInputText(text: string, cursorPos: number, hueOffset: number, showCursor: boolean) {
   // Build segments: plain text and @mentions
   const segments: { text: string; isMention: boolean; start: number }[] = [];
-  const mentionRegex = /@"([^"]+)"|@(\S+)/g;
+  const mentionRegex = /@"([^"]+)"|@([A-Za-z0-9][\w-]*)/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
