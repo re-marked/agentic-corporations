@@ -33,6 +33,7 @@ export function ChatView({ channel, members: initialMembers, messagesPath, daemo
   const messages = useMessages(messagesPath);
   const [sending, setSending] = useState(false);
   const [thinking, setThinking] = useState(false);
+  const [thinkingAgents, setThinkingAgents] = useState<string[]>([]);
   const [members, setMembers] = useState(initialMembers);
   const [showHireWizard, setShowHireWizard] = useState(false);
   const lastMsgCount = useRef(messages.length);
@@ -116,9 +117,10 @@ export function ChatView({ channel, members: initialMembers, messagesPath, daemo
 
     setSending(true);
     try {
-      const { dispatching } = await daemonClient.sendMessage(channel.id, text);
+      const { dispatching, dispatchTargets } = await daemonClient.sendMessage(channel.id, text);
       if (dispatching) {
         setThinking(true);
+        setThinkingAgents(dispatchTargets);
       }
     } catch (err) {
       // Message send failed
@@ -152,7 +154,11 @@ export function ChatView({ channel, members: initialMembers, messagesPath, daemo
         {thinking && (
           <Box gap={1} marginTop={1}>
             <Text color="cyan"><Spinner type="dots" /></Text>
-            <Text dimColor>Thinking...</Text>
+            <Text dimColor>
+              {thinkingAgents.length > 0
+                ? `${thinkingAgents.join(', ')} ${thinkingAgents.length === 1 ? 'is' : 'are'} typing...`
+                : 'Thinking...'}
+            </Text>
           </Box>
         )}
       </Box>

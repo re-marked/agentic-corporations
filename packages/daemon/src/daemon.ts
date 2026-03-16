@@ -86,7 +86,7 @@ export class Daemon {
   async sendMessage(
     channelId: string,
     content: string,
-  ): Promise<{ message: ChannelMessage; dispatching: boolean }> {
+  ): Promise<{ message: ChannelMessage; dispatching: boolean; dispatchTargets: string[] }> {
     const channels = readConfig<Channel[]>(join(this.corpRoot, CHANNELS_JSON));
     const channel = channels.find((c) => c.id === channelId);
     if (!channel) throw new Error(`Channel ${channelId} not found`);
@@ -114,27 +114,30 @@ export class Daemon {
     userMsg.originId = userMsg.id;
     appendMessage(messagesPath, userMsg);
 
-    // Predict whether the router will dispatch to an agent
-    let dispatching = false;
+    // Predict which agents the router will dispatch to
+    const dispatchTargets: string[] = [];
     if (channel.kind === 'direct') {
-      // DM: will dispatch if the other member is a ready agent
       const otherId = channel.memberIds.find((id) => id !== founder.id);
       if (otherId) {
+        const other = members.find((m) => m.id === otherId);
         const proc = this.processManager.getAgent(otherId);
-        dispatching = !!(proc && proc.status === 'ready');
+        if (other && proc && proc.status === 'ready') {
+          dispatchTargets.push(other.displayName);
+        }
       }
     } else {
-      // Non-DM: will dispatch if @mentions resolve to ready agents
       const mentionedIds = resolveMentions(content, members);
-      dispatching = mentionedIds.some((id) => {
+      for (const id of mentionedIds) {
         const m = members.find((mem) => mem.id === id);
-        if (!m || m.type !== 'agent') return false;
+        if (!m || m.type !== 'agent') continue;
         const proc = this.processManager.getAgent(id);
-        return proc && proc.status === 'ready';
-      });
+        if (proc && proc.status === 'ready') {
+          dispatchTargets.push(m.displayName);
+        }
+      }
     }
 
-    return { message: userMsg, dispatching };
+    return { message: userMsg, dispatching: dispatchTargets.length > 0, dispatchTargets };
   }
 
   async stop(): Promise<void> {
