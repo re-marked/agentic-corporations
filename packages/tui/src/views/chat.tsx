@@ -18,7 +18,7 @@ import { useMessages } from '../hooks/use-messages.js';
 import { HireWizard } from './hire-wizard.js';
 import type { DaemonClient } from '../lib/daemon-client.js';
 
-const THINKING_TIMEOUT_MS = 30_000;
+const THINKING_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes — agents can work long
 
 interface Props {
   channel: Channel;

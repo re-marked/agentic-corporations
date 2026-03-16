@@ -130,7 +130,7 @@ export async function dispatchToAgent(
       Authorization: `Bearer ${agent.gatewayToken}`,
     },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(120_000),
+    signal: AbortSignal.timeout(15 * 60 * 1000), // 15 minutes — agents can work long
   });
 
   if (!resp.ok) {
