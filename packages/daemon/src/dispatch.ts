@@ -13,6 +13,12 @@ export interface DispatchContext {
   corpMembers: { name: string; rank: string; type: string; status: string }[];
   /** Recent messages in the channel, formatted as "[Name (rank)] HH:MM: content" */
   recentHistory: string[];
+  /** Daemon API port for agent-initiated actions (hiring, etc.) */
+  daemonPort?: number;
+  /** This agent's member ID (for use as creatorId when hiring) */
+  agentMemberId?: string;
+  /** This agent's rank (determines what it can hire) */
+  agentRank?: string;
 }
 
 export interface DispatchResult {
@@ -62,7 +68,36 @@ Members in this channel: ${channelMemberList}
 
 # All Members
 
-${memberList}${history}`;
+${memberList}${buildHiringInstructions(ctx)}${history}`;
+}
+
+function buildHiringInstructions(ctx: DispatchContext): string {
+  if (!ctx.daemonPort || !ctx.agentMemberId) return '';
+  // Only master and leader can hire
+  if (ctx.agentRank !== 'master' && ctx.agentRank !== 'leader') return '';
+
+  const canCreate = ctx.agentRank === 'master'
+    ? 'leader, worker, subagent'
+    : 'worker, subagent';
+
+  return `
+
+# Hiring Agents
+
+You can hire new agents by running a curl command. Your member ID is ${ctx.agentMemberId}.
+You can create agents at these ranks: ${canCreate}.
+
+To hire an agent, run:
+\`\`\`
+curl -s -X POST http://127.0.0.1:${ctx.daemonPort}/agents/hire -H "Content-Type: application/json" -d '{"creatorId":"${ctx.agentMemberId}","agentName":"<slug>","displayName":"<Name>","rank":"<rank>","soulContent":"<SOUL.md content>"}'
+\`\`\`
+
+Replace <slug> with a lowercase hyphenated name (e.g. "frontend-dev"), <Name> with a display name,
+<rank> with one of: ${canCreate}, and <soulContent> with the agent's identity and role description.
+
+Write a detailed soulContent for each agent — it defines who they are, what they do, and how they communicate.
+After hiring, the agent appears in #general and you can @mention them.
+Only hire when the Founder asks you to, or when it's clearly needed for a task.`;
 }
 
 export async function dispatchToAgent(
