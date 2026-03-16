@@ -280,6 +280,9 @@ export class MessageRouter {
       channelMembers,
       corpMembers,
       recentHistory,
+      daemonPort: this.daemon.getPort(),
+      agentMemberId: targetAgent.id,
+      agentRank: targetAgent.rank,
     };
   }
 }
