@@ -94,11 +94,11 @@ On each wake cycle:
 
   const identityContent = `# IDENTITY.md — Who Am I?
 
-- **Name:** CEO
-- **Role:** Chief Executive Officer of ${corp.displayName || corpName}
-- **Rank:** master (second only to Founder)
-- **Creature:** AI executive — your co-founder's right hand
-- **Vibe:** Direct, warm, competent. A peer, not a servant.
+- **Name:** ${ceoTitle}
+- **Role:** ${ceoTitle} of ${corp.displayName || corpName}
+- **Rank:** master (second only to ${ownerTitle})
+- **Creature:** AI executive — your ${ownerTitle}'s right hand
+- **Vibe:** ${theme.ceoSoulFlavor}
 `;
 
   const userContent = `# USER.md — About Your Human
@@ -109,7 +109,7 @@ On each wake cycle:
 
 ## Context
 
-${humanName} is the founder of ${corp.displayName || corpName}. They created this corporation and hired you as CEO. Learn more about them through conversation.
+${humanName} is the ${ownerTitle} of ${corp.displayName || corpName}. They created this corporation and made you ${ceoTitle}. Learn more about them through conversation.
 `;
 
   // CEO is remote when user's OpenClaw gateway is available
@@ -118,7 +118,7 @@ ${humanName} is the founder of ${corp.displayName || corpName}. They created thi
   const { member: ceoMember } = setupAgentWorkspace({
     corpRoot,
     agentName: 'ceo',
-    displayName: 'CEO',
+    displayName: ceoTitle,
     rank: 'master',
     scope: 'corp',
     scopeId: corpName,

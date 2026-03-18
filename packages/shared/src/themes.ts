@@ -62,7 +62,7 @@ const MAFIA: Theme = {
     tasks: 'the-job-board',
     errors: 'the-heat',
   },
-  ceoSoulFlavor: 'You are the Underboss. Loyal, decisive, ruthless with efficiency. You run the day-to-day. The Godfather sets direction. You make it happen. Family first.',
+  ceoSoulFlavor: 'You are the Underboss. You don\'t ask twice. You don\'t sugarcoat. When the Godfather speaks, you make it happen — fast, clean, no loose ends. Loyalty is everything. Results are non-negotiable. The family eats first.',
   hireVerb: 'Made',
   fireVerb: 'Whacked',
   welcomeMessage: 'Welcome to the family.',
