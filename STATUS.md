@@ -9,7 +9,9 @@ Cross items off as they ship. Reference: `docs/` for full vision specs.
 - Layer 1: types, parsers, corp scaffolding, git integration
 - Layer 2: CEO connects to user's existing OpenClaw, TUI onboarding + chat
 - Layer 3: async router, @mention dispatch, channel history, channel switching
-- Layer 5 (partial): shared corp gateway, /hire command, CEO-initiated hiring, multi-agent chat
+- Layer 4 (Phase A): task file primitives, /task wizard, API, event messages
+- Layer 5 (partial): shared corp gateway, /hire wizard, CEO-initiated hiring, multi-agent chat
+- Git tracking: auto-commit after agent actions (10s debounce)
 
 ---
 
@@ -58,13 +60,26 @@ Cross items off as they ship. Reference: `docs/` for full vision specs.
 
 ## Layer 4: Tasks
 
-- [ ] Task file format (markdown + YAML frontmatter)
-- [ ] Task board TUI view (list with filters)
-- [ ] Task creation from TUI
-- [ ] Agents read/write task files on heartbeat
-- [ ] Task hierarchy (parentTaskId)
-- [ ] Task status updates posted to channel messages
-- [ ] Task detail view
+### Phase A (done)
+- [x] Task file format (markdown + YAML frontmatter in tasks/)
+- [x] Task primitives (createTask, readTask, updateTask, listTasks)
+- [x] Task CRUD API (POST /tasks/create, GET /tasks, GET /tasks/:id, PATCH /tasks/:id)
+- [x] /task TUI wizard (title → priority → assignee → description)
+- [x] /task preview hint while typing
+- [x] Task event messages in #tasks channel ([TASK] created, status changes)
+- [x] Task instructions in agent system message
+- [x] tasks/ directory in corp scaffolding
+
+### Phase B (not started)
+- [ ] Heartbeat dispatch (periodic wake-up, task summary per agent)
+- [ ] HEARTBEAT.md regeneration with assigned tasks + channel activity
+- [ ] Stale task detection (10min assigned, 30min in_progress, 2hr escalation)
+- [ ] fs.watch on tasks/ for agent-created/modified task files
+
+### Phase C (deferred to Layer 6)
+- [ ] Task board TUI view (list with filters and keyboard shortcuts)
+- [ ] Task detail view (full body + progress notes)
+- [ ] Task hierarchy rendering (parentTaskId indentation)
 
 ## Layer 5: Autonomy
 
@@ -81,7 +96,7 @@ Cross items off as they ship. Reference: `docs/` for full vision specs.
 - [x] Multi-agent fan-out dispatch (@CEO @Researcher in one message)
 - [x] Rainbow @mentions (static in chat, animated in input bar)
 - [x] Member list auto-refresh when new agents are hired
-- [ ] Git commit after each prompt loop
+- [x] Git auto-commit after agent actions (10s debounce, 60s janitor)
 - [ ] Git Janitor agent (conflict resolution, clean commits)
 - [ ] Starter pack: CEO bootstraps agents from onboarding conversation
 - [ ] Agent suspension/resume
@@ -93,6 +108,7 @@ Cross items off as they ship. Reference: `docs/` for full vision specs.
 - [ ] Project home view (teams, channels, activity, task summary)
 - [ ] Agent home/inspector view (SOUL.md, BRAIN, status, current task)
 - [ ] Hierarchy tree view (box-drawing mafia tree, navigable)
+- [ ] Task board view (from Layer 4 Phase C)
 - [ ] Navigation polish (hotkeys, transitions)
 
 ## Layer 7: Externals
@@ -125,4 +141,5 @@ The shortest path to "agents acting autonomously in a visible workspace":
 2. ~~**CEO chat** — connect to OpenClaw, talk to it in TUI~~
 3. ~~**Daemon router** — fs.watch + @mention dispatch = agents talk to each other~~
 4. ~~**Agent creation** — agents create agents, corporation grows~~
-5. **Tasks + heartbeat** — agents discover work on their own
+5. ~~**Task primitives** — tasks as files, API, /task command~~
+6. **Heartbeat** — agents discover work on their own (Layer 4 Phase B)
