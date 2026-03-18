@@ -111,8 +111,8 @@ export function setupAgentWorkspace(opts: AgentSetupOpts): AgentSetupResult {
           model: { primary: `${provider}/${model}` },
           workspace: agentAbsDir.replace(/\\/g, '/'),
           compaction: { mode: 'safeguard' },
-          verboseDefault: 'off',
-          blockStreamingDefault: 'on',
+          verboseDefault: 'full',
+          blockStreamingDefault: 'off',
         },
       },
       gateway: {

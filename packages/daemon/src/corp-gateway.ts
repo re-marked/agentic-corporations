@@ -269,7 +269,8 @@ export class CorpGateway {
         defaults: {
           model: { primary: defaultModel },
           compaction: { mode: 'safeguard' },
-          blockStreamingDefault: 'on',
+          verboseDefault: 'full',
+          blockStreamingDefault: 'off',
           heartbeat: {
             every: '10m',
             prompt: 'Read your HEARTBEAT.md file. It contains your current tasks and instructions. Follow them. If nothing needs attention, reply HEARTBEAT_OK.',
