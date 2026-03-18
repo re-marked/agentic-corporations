@@ -245,6 +245,9 @@ export class MessageRouter {
       appendMessage(msgPath, responseMsg);
 
       console.log(`[router] ${target.displayName} responded in #${channel.name}`);
+
+      // Mark corp as dirty for git commit
+      this.daemon.gitManager.markDirty(target.displayName);
     } catch (err) {
       console.error(`[router] Dispatch to ${target.displayName} failed:`, err);
     }
