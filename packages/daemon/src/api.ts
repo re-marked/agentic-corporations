@@ -1,23 +1,14 @@
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from 'node:http';
-import { join } from 'node:path';
 import {
-  type Channel,
-  type Member,
-  type ChannelMessage,
   createTask,
   listTasks,
   readTask,
   updateTask,
   taskPath,
-  readConfig,
-  appendMessage,
-  generateId,
-  CHANNELS_JSON,
-  MEMBERS_JSON,
-  MESSAGES_JSONL,
 } from '@agentcorp/shared';
 import type { Daemon } from './daemon.js';
 import { hireAgent } from './hire.js';
+import { writeTaskEvent } from './task-events.js';
 
 export function createApi(daemon: Daemon): Server {
   const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
@@ -194,31 +185,6 @@ export function createApi(daemon: Daemon): Server {
   return server;
 }
 
-function writeTaskEvent(corpRoot: string, content: string): void {
-  try {
-    const channels = readConfig<Channel[]>(join(corpRoot, CHANNELS_JSON));
-    const tasksChannel = channels.find((c) => c.name === 'tasks');
-    if (!tasksChannel) return;
-
-    const msg: ChannelMessage = {
-      id: generateId(),
-      channelId: tasksChannel.id,
-      senderId: 'system',
-      threadId: null,
-      content: `[TASK] ${content}`,
-      kind: 'task_event',
-      mentions: [],
-      metadata: null,
-      depth: 0,
-      originId: '',
-      timestamp: new Date().toISOString(),
-    };
-    msg.originId = msg.id;
-    appendMessage(join(corpRoot, tasksChannel.path, MESSAGES_JSONL), msg);
-  } catch {
-    // Non-fatal
-  }
-}
 
 function json(res: ServerResponse, data: unknown, status = 200): void {
   res.writeHead(status, { 'Content-Type': 'application/json' });
