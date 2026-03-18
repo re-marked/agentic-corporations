@@ -18,6 +18,8 @@ import {
 import { ProcessManager } from './process-manager.js';
 import { MessageRouter } from './router.js';
 import { GitManager } from './git-manager.js';
+import { HeartbeatManager } from './heartbeat.js';
+import { TaskWatcher } from './task-watcher.js';
 import { createApi } from './api.js';
 
 export class Daemon {
@@ -26,6 +28,8 @@ export class Daemon {
   processManager: ProcessManager;
   router: MessageRouter;
   gitManager: GitManager;
+  heartbeat: HeartbeatManager;
+  taskWatcher: TaskWatcher;
   private server: Server | null = null;
   private port = 0;
 
@@ -35,6 +39,8 @@ export class Daemon {
     this.processManager = new ProcessManager(corpRoot, globalConfig);
     this.router = new MessageRouter(this);
     this.gitManager = new GitManager(corpRoot);
+    this.heartbeat = new HeartbeatManager(this);
+    this.taskWatcher = new TaskWatcher(this);
   }
 
   async start(): Promise<number> {
@@ -60,10 +66,12 @@ export class Daemon {
     });
   }
 
-  /** Start the router and git manager after all agents are spawned */
+  /** Start the router, git manager, heartbeat, and task watcher */
   startRouter(): void {
     this.router.start();
     this.gitManager.start();
+    this.heartbeat.start();
+    this.taskWatcher.start();
   }
 
   async spawnAllAgents(): Promise<void> {
@@ -148,6 +156,8 @@ export class Daemon {
   }
 
   async stop(): Promise<void> {
+    this.heartbeat.stop();
+    this.taskWatcher.stop();
     this.router.stop();
     await this.gitManager.stop();
     await this.processManager.stopAll();
