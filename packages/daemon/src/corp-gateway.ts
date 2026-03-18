@@ -25,6 +25,8 @@ export class CorpGateway {
   private _token: string;
   private process: ResultPromise | null = null;
   private _status: 'stopped' | 'starting' | 'ready' | 'restarting' = 'stopped';
+  /** Callback for real-time tool call events from agent stdout */
+  onAgentOutput: ((line: string) => void) | null = null;
 
   constructor(corpRoot: string, globalConfig: GlobalConfig) {
     this.corpRoot = corpRoot;
@@ -160,10 +162,15 @@ export class CorpGateway {
 
     this.process = proc;
 
-    // Log output
+    // Log output + forward agent messages to callback
     proc.stdout?.on('data', (chunk: Buffer) => {
-      const line = chunk.toString().trim();
-      if (line) console.log(`[gateway] ${line}`);
+      const lines = chunk.toString().split('\n');
+      for (const raw of lines) {
+        const line = raw.trim();
+        if (!line) continue;
+        console.log(`[gateway] ${line}`);
+        if (this.onAgentOutput) this.onAgentOutput(line);
+      }
     });
     proc.stderr?.on('data', (chunk: Buffer) => {
       const line = chunk.toString().trim();
