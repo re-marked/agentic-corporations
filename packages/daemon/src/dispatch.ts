@@ -48,6 +48,7 @@ Corp workspace: ${ctx.corpRoot}
 Your agent dir: ${ctx.agentDir}
 Read your role instructions from: ${ctx.agentDir}/SOUL.md
 Read your operating rules from: ${ctx.agentDir}/AGENTS.md
+Your current tasks: ${ctx.agentDir}/TASKS.md
 Your memory within this corp: ${ctx.agentDir}/MEMORY.md
 Your knowledge base: ${ctx.agentDir}/brain/
 
