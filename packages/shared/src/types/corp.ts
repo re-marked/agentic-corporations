@@ -4,5 +4,6 @@ export interface Corporation {
   owner: string;
   ceo: string | null;
   description: string;
+  theme: string;
   createdAt: string;
 }

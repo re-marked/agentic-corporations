@@ -77,6 +77,10 @@ export { canHire } from './ranks.js';
 export { buildHierarchy } from './hierarchy.js';
 export type { HierarchyNode } from './hierarchy.js';
 
+// Themes
+export { getTheme, getAllThemes, rankLabel } from './themes.js';
+export type { Theme, ThemeId } from './themes.js';
+
 // Tasks
 export { createTask, readTask, updateTask, listTasks, taskPath } from './tasks.js';
 export type { CreateTaskOpts, TaskFilter, TaskWithBody } from './tasks.js';
