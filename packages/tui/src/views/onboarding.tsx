@@ -21,6 +21,7 @@ import { ChatView } from './chat.js';
 import { CommandPalette } from './command-palette.js';
 import { DaemonClient } from '../lib/daemon-client.js';
 import { COLORS, BORDER_STYLE } from '../theme.js';
+import { CLAUDE_CORP_LOGO, asciiName } from '../ascii.js';
 
 type Step = 'your-name' | 'corp-name' | 'theme' | 'spawning' | 'ready';
 
@@ -169,7 +170,8 @@ export function OnboardingView() {
   if (step === 'your-name') {
     return (
       <Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1} height="100%">
-        <Box flexDirection="column" borderStyle={BORDER_STYLE} borderColor={COLORS.primary} paddingX={3} paddingY={1} width={50}>
+        <Text color={COLORS.primary}>{CLAUDE_CORP_LOGO}</Text>
+        <Box flexDirection="column" borderStyle={BORDER_STYLE} borderColor={COLORS.primary} paddingX={3} paddingY={1} width={50} marginTop={1}>
           <Box marginBottom={1}>
             <Text bold color={COLORS.primary}>What's your name?</Text>
           </Box>
@@ -256,7 +258,8 @@ export function OnboardingView() {
   if (step === 'spawning') {
     return (
       <Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1} height="100%">
-        <Box flexDirection="column" borderStyle={BORDER_STYLE} borderColor={COLORS.border} paddingX={3} paddingY={1} width={50}>
+        <Text color={COLORS.primary}>{asciiName(corpName)}</Text>
+        <Box flexDirection="column" borderStyle={BORDER_STYLE} borderColor={COLORS.border} paddingX={3} paddingY={1} width={50} marginTop={1}>
           <Box gap={1}>
             <Text color={COLORS.primary}><Spinner type="dots" /></Text>
             <Text color={COLORS.subtle}>{statusText}</Text>
