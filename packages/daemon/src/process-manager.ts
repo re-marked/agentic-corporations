@@ -34,6 +34,8 @@ export class ProcessManager {
   private globalConfig: GlobalConfig;
   private openclawBinary: string;
   corpGateway: CorpGateway | null = null;
+  /** Callback for CEO stdout — tool call forwarding */
+  onCeoOutput: ((line: string) => void) | null = null;
 
   constructor(corpRoot: string, globalConfig: GlobalConfig) {
     this.corpRoot = corpRoot;
@@ -208,10 +210,7 @@ export class ProcessManager {
         const line = raw.trim();
         if (!line) continue;
         console.log(`[CEO] ${line}`);
-        // Forward to corp gateway's callback if set (router uses this)
-        if (this.corpGateway?.onAgentOutput) {
-          this.corpGateway.onAgentOutput(line);
-        }
+        if (this.onCeoOutput) this.onCeoOutput(line);
       }
     });
     proc.stderr?.on('data', (chunk: Buffer) => {

@@ -232,9 +232,12 @@ export class MessageRouter {
       }
     }
 
-    // Capture gateway stdout during dispatch → write tool calls to channel
-    const gw = this.daemon.processManager.corpGateway;
-    const toolCallHandler = gw && agentProc.mode === 'gateway' ? (line: string) => {
+    // Capture agent stdout during dispatch → write tool calls to channel
+    const pm = this.daemon.processManager;
+    const gw = pm.corpGateway;
+    const isGatewayAgent = agentProc.mode === 'gateway' && gw;
+    const isCeoAgent = agentProc.model === 'openclaw:main';
+    const toolCallHandler = (isGatewayAgent || isCeoAgent) ? (line: string) => {
       // Filter for agent activity lines (tool calls, text output)
       // OpenClaw verbose lines contain timestamps + agent events
       const isAgentLine = !line.includes('[gateway]') &&
@@ -269,8 +272,9 @@ export class MessageRouter {
       }
     } : null;
 
-    if (gw && toolCallHandler) {
-      gw.onAgentOutput = toolCallHandler;
+    if (toolCallHandler) {
+      if (isGatewayAgent && gw) gw.onAgentOutput = toolCallHandler;
+      if (isCeoAgent) pm.onCeoOutput = toolCallHandler;
     }
 
     try {
@@ -281,8 +285,9 @@ export class MessageRouter {
         `channel-${channel.id}-${msg.id}`,
       );
 
-      // Stop capturing gateway output
+      // Stop capturing output
       if (gw) gw.onAgentOutput = null;
+      pm.onCeoOutput = null;
 
       // Write agent response to JSONL
       const responseMsg: ChannelMessage = {
@@ -309,6 +314,7 @@ export class MessageRouter {
     } catch (err) {
       console.error(`[router] Dispatch to ${target.displayName} failed:`, err);
       if (gw) gw.onAgentOutput = null;
+      pm.onCeoOutput = null;
     }
   }
 
