@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { Corporation } from './types/corp.js';
 import type { Member } from './types/member.js';
 import type { Channel } from './types/channel.js';
+import { getTheme, type ThemeId } from './themes.js';
 import { generateId } from './id.js';
 import { writeConfig } from './parsers/config.js';
 import { corpGit } from './git.js';
@@ -24,6 +25,7 @@ interface CorpsIndex {
 export async function scaffoldCorp(
   corpName: string,
   userName: string,
+  themeId: ThemeId = 'corporate',
 ): Promise<string> {
   const corpRoot = join(AGENTCORP_HOME, corpName);
 
@@ -31,15 +33,17 @@ export async function scaffoldCorp(
     throw new Error(`Corporation "${corpName}" already exists at ${corpRoot}`);
   }
 
-  // Create directory structure
+  const theme = getTheme(themeId);
+
+  // Create directory structure with themed channel names
   const dirs = [
     corpRoot,
     join(corpRoot, 'agents'),
-    join(corpRoot, 'channels', 'general'),
-    join(corpRoot, 'channels', 'system'),
-    join(corpRoot, 'channels', 'heartbeat'),
-    join(corpRoot, 'channels', 'tasks'),
-    join(corpRoot, 'channels', 'errors'),
+    join(corpRoot, 'channels', theme.channels.general),
+    join(corpRoot, 'channels', theme.channels.system),
+    join(corpRoot, 'channels', theme.channels.heartbeat),
+    join(corpRoot, 'channels', theme.channels.tasks),
+    join(corpRoot, 'channels', theme.channels.errors),
     join(corpRoot, 'tasks'),
     join(corpRoot, 'projects'),
   ];
@@ -59,6 +63,7 @@ export async function scaffoldCorp(
     owner: userId,
     ceo: null,
     description: '',
+    theme: themeId,
     createdAt: now,
   };
   writeConfig(join(corpRoot, CORP_JSON), corp);
@@ -79,13 +84,14 @@ export async function scaffoldCorp(
   };
   writeConfig(join(corpRoot, MEMBERS_JSON), [founder]);
 
-  // channels.json — initial channels
+  // channels.json — initial channels with themed names
+  const ch = theme.channels;
   const channels: Channel[] = [
-    makeChannel('general', 'broadcast', 'corp', corpName, userId, 'channels/general/', now),
-    makeChannel('system', 'system', 'corp', corpName, userId, 'channels/system/', now),
-    makeChannel('heartbeat', 'system', 'corp', corpName, userId, 'channels/heartbeat/', now),
-    makeChannel('tasks', 'system', 'corp', corpName, userId, 'channels/tasks/', now),
-    makeChannel('errors', 'system', 'corp', corpName, userId, 'channels/errors/', now),
+    makeChannel(ch.general, 'broadcast', 'corp', corpName, userId, `channels/${ch.general}/`, now),
+    makeChannel(ch.system, 'system', 'corp', corpName, userId, `channels/${ch.system}/`, now),
+    makeChannel(ch.heartbeat, 'system', 'corp', corpName, userId, `channels/${ch.heartbeat}/`, now),
+    makeChannel(ch.tasks, 'system', 'corp', corpName, userId, `channels/${ch.tasks}/`, now),
+    makeChannel(ch.errors, 'system', 'corp', corpName, userId, `channels/${ch.errors}/`, now),
   ];
 
   // Founder is auto-added to general
