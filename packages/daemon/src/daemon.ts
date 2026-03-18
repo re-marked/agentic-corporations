@@ -17,6 +17,7 @@ import {
 } from '@agentcorp/shared';
 import { ProcessManager } from './process-manager.js';
 import { MessageRouter } from './router.js';
+import { GitManager } from './git-manager.js';
 import { createApi } from './api.js';
 
 export class Daemon {
@@ -24,6 +25,7 @@ export class Daemon {
   globalConfig: GlobalConfig;
   processManager: ProcessManager;
   router: MessageRouter;
+  gitManager: GitManager;
   private server: Server | null = null;
   private port = 0;
 
@@ -32,6 +34,7 @@ export class Daemon {
     this.globalConfig = globalConfig;
     this.processManager = new ProcessManager(corpRoot, globalConfig);
     this.router = new MessageRouter(this);
+    this.gitManager = new GitManager(corpRoot);
   }
 
   async start(): Promise<number> {
@@ -57,9 +60,10 @@ export class Daemon {
     });
   }
 
-  /** Start the router after all agents are spawned */
+  /** Start the router and git manager after all agents are spawned */
   startRouter(): void {
     this.router.start();
+    this.gitManager.start();
   }
 
   async spawnAllAgents(): Promise<void> {
@@ -114,6 +118,9 @@ export class Daemon {
     userMsg.originId = userMsg.id;
     appendMessage(messagesPath, userMsg);
 
+    // Mark for git commit
+    this.gitManager.markDirty(founder.displayName);
+
     // Predict which agents the router will dispatch to
     const dispatchTargets: string[] = [];
     if (channel.kind === 'direct') {
@@ -142,6 +149,7 @@ export class Daemon {
 
   async stop(): Promise<void> {
     this.router.stop();
+    await this.gitManager.stop();
     await this.processManager.stopAll();
     if (this.server) {
       this.server.close();
