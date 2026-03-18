@@ -226,7 +226,30 @@ export class ProcessManager {
       for (const raw of lines) {
         const line = raw.trim();
         if (!line) continue;
-        log(`[CEO] ${line}`);
+        // Only log meaningful lines, skip OpenClaw startup noise
+        const isNoise = line.includes('[telegram]') ||
+          line.includes('[bonjour]') ||
+          line.includes('[canvas]') ||
+          line.includes('[browser') ||
+          line.includes('[heartbeat] started') ||
+          line.includes('[health-monitor]') ||
+          line.includes('[hooks') ||
+          line.includes('[gateway] listening') ||
+          line.includes('[gateway] log file') ||
+          line.includes('[gateway] agent model') ||
+          line.includes('[reload]') ||
+          line.includes('update available') ||
+          line.includes('Doctor warnings') ||
+          line.includes('groupPolicy') ||
+          line.includes('groupAllowFrom') ||
+          line.includes('autoSelectFamily') ||
+          line.includes('dnsResultOrder') ||
+          line.includes('│') ||
+          line.includes('├') ||
+          line.includes('◇') ||
+          line.includes('╮') ||
+          line.includes('╯');
+        if (!isNoise) log(`[CEO] ${line}`);
         if (this.onCeoOutput) this.onCeoOutput(line);
       }
     });
