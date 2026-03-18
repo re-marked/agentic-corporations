@@ -110,11 +110,15 @@ export async function hireAgent(
     addChannelToRegistry(corpRoot, dmChannel);
   }
 
-  // 5. Add to #general
+  // 5. Add to #general and #tasks
   const channels = readConfig<Channel[]>(join(corpRoot, CHANNELS_JSON));
   const general = channels.find((c) => c.name === 'general');
   if (general) {
     addMemberToChannel(corpRoot, general.id, member.id);
+  }
+  const tasksChannel = channels.find((c) => c.name === 'tasks');
+  if (tasksChannel) {
+    addMemberToChannel(corpRoot, tasksChannel.id, member.id);
   }
 
   // 6. Add to corp gateway + restart

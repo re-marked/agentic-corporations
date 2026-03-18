@@ -8,7 +8,7 @@ import {
 } from '@agentcorp/shared';
 import type { Daemon } from './daemon.js';
 import { hireAgent } from './hire.js';
-import { writeTaskEvent } from './task-events.js';
+import { writeTaskEvent, notifyTaskAssignment } from './task-events.js';
 
 export function createApi(daemon: Daemon): Server {
   const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
@@ -107,6 +107,11 @@ export function createApi(daemon: Daemon): Server {
         writeTaskEvent(daemon.corpRoot, `"${task.title}" created (priority: ${task.priority})`);
         daemon.taskWatcher.suppressNextCreate(taskPath(daemon.corpRoot, task.id));
         daemon.heartbeat.refreshAll();
+
+        // @mention the assignee so the router dispatches immediately
+        if (task.assignedTo) {
+          notifyTaskAssignment(daemon.corpRoot, task.assignedTo, task.title);
+        }
 
         json(res, { ok: true, task });
         return;
