@@ -10,6 +10,7 @@ import {
   MEMBERS_JSON,
 } from '@agentcorp/shared';
 import { CorpGateway } from './corp-gateway.js';
+import { log, logError } from './logger.js';
 
 export type AgentProcessStatus = 'starting' | 'ready' | 'stopped' | 'crashed';
 
@@ -164,7 +165,7 @@ export class ProcessManager {
     const openclawHome = join(homedir(), '.openclaw').replace(/\\/g, '/');
 
     // Stop the existing gateway so we can take over the port
-    console.log(`[daemon] Stopping existing OpenClaw gateway to take over...`);
+    log(`[daemon] Stopping existing OpenClaw gateway to take over...`);
     try {
       await execa('openclaw', ['gateway', 'stop'], { reject: false, timeout: 10000 });
       // Wait a moment for port to free up
@@ -221,9 +222,10 @@ export class ProcessManager {
     // Health check
     try {
       await this.healthCheck(agentProc, 30);
-      console.log(`[daemon] CEO spawned from ~/.openclaw on port ${gw.port}`);
+      log(`[daemon] CEO spawned from ~/.openclaw on port ${gw.port}`);
     } catch {
       agentProc.status = 'crashed';
+      logError(`[daemon] CEO failed to start from ~/.openclaw on port ${gw.port}`);
       throw new Error(`CEO failed to start from ~/.openclaw on port ${gw.port}`);
     }
 
@@ -231,7 +233,7 @@ export class ProcessManager {
     proc.then((result) => {
       if (agentProc.status !== 'stopped') {
         agentProc.status = 'crashed';
-        console.error(`[daemon] CEO exited with code ${result.exitCode}`);
+        logError(`[daemon] CEO exited with code ${result.exitCode}`);
       }
       agentProc.process = null;
     }).catch(() => {

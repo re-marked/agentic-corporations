@@ -125,8 +125,24 @@ export function ChatView({ channel, members: initialMembers, messagesPath, daemo
       return;
     }
 
-    // Navigation commands
+    // /logs — show recent daemon logs
     const cmd = text.trim().toLowerCase();
+    if (cmd === '/logs') {
+      try {
+        const { readFileSync, existsSync } = await import('node:fs');
+        const { DAEMON_LOG_PATH } = await import('@agentcorp/shared');
+        if (existsSync(DAEMON_LOG_PATH)) {
+          const content = readFileSync(DAEMON_LOG_PATH, 'utf-8');
+          const lines = content.trim().split('\n').slice(-30);
+          writeSystemMessage('--- Recent Daemon Logs ---\n' + lines.join('\n'));
+        } else {
+          writeSystemMessage('No daemon logs found.');
+        }
+      } catch {}
+      return;
+    }
+
+    // Navigation commands
     if (cmd === '/h' || cmd === '/hierarchy') {
       onNavigate?.({ type: 'hierarchy' });
       return;
