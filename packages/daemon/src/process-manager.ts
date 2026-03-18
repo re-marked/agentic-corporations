@@ -35,8 +35,6 @@ export class ProcessManager {
   private globalConfig: GlobalConfig;
   private openclawBinary: string;
   corpGateway: CorpGateway | null = null;
-  /** Callback for CEO stdout — tool call forwarding */
-  onCeoOutput: ((line: string) => void) | null = null;
 
   constructor(corpRoot: string, globalConfig: GlobalConfig) {
     this.corpRoot = corpRoot;
@@ -226,31 +224,7 @@ export class ProcessManager {
       for (const raw of lines) {
         const line = raw.trim();
         if (!line) continue;
-        // Only log meaningful lines, skip OpenClaw startup noise
-        const isNoise = line.includes('[telegram]') ||
-          line.includes('[bonjour]') ||
-          line.includes('[canvas]') ||
-          line.includes('[browser') ||
-          line.includes('[heartbeat] started') ||
-          line.includes('[health-monitor]') ||
-          line.includes('[hooks') ||
-          line.includes('[gateway] listening') ||
-          line.includes('[gateway] log file') ||
-          line.includes('[gateway] agent model') ||
-          line.includes('[reload]') ||
-          line.includes('update available') ||
-          line.includes('Doctor warnings') ||
-          line.includes('groupPolicy') ||
-          line.includes('groupAllowFrom') ||
-          line.includes('autoSelectFamily') ||
-          line.includes('dnsResultOrder') ||
-          line.includes('│') ||
-          line.includes('├') ||
-          line.includes('◇') ||
-          line.includes('╮') ||
-          line.includes('╯');
-        if (!isNoise) log(`[CEO] ${line}`);
-        if (!isNoise && this.onCeoOutput) this.onCeoOutput(line);
+        log(`[CEO] ${line}`);
       }
     });
     proc.stderr?.on('data', (chunk: Buffer) => {

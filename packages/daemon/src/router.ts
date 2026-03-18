@@ -232,51 +232,6 @@ export class MessageRouter {
       }
     }
 
-    // Capture agent stdout during dispatch → write tool calls to channel
-    const pm = this.daemon.processManager;
-    const gw = pm.corpGateway;
-    const isGatewayAgent = agentProc.mode === 'gateway' && gw;
-    const isCeoAgent = agentProc.model === 'openclaw:main';
-    const toolCallHandler = (isGatewayAgent || isCeoAgent) ? (line: string) => {
-      // Filter for agent activity lines (tool calls, text output)
-      // OpenClaw verbose lines contain timestamps + agent events
-      const isAgentLine = !line.includes('[gateway]') &&
-        !line.includes('[heartbeat]') &&
-        !line.includes('[bonjour]') &&
-        !line.includes('[browser') &&
-        !line.includes('[canvas]') &&
-        !line.includes('[reload]') &&
-        !line.includes('update available') &&
-        !line.includes('listening on');
-
-      if (isAgentLine && line.length > 5) {
-        // Strip timestamp prefix if present
-        const cleaned = line.replace(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z?\s*/, '').trim();
-        if (!cleaned) return;
-
-        const toolMsg: ChannelMessage = {
-          id: generateId(),
-          channelId: channel.id,
-          senderId: targetId,
-          threadId: null,
-          content: cleaned,
-          kind: 'system',
-          mentions: [],
-          metadata: null,
-          depth: 0,
-          originId: msg.originId,
-          timestamp: new Date().toISOString(),
-        };
-        const msgPath2 = join(this.daemon.corpRoot, channel.path, MESSAGES_JSONL);
-        appendMessage(msgPath2, toolMsg);
-      }
-    } : null;
-
-    if (toolCallHandler) {
-      if (isGatewayAgent && gw) gw.onAgentOutput = toolCallHandler;
-      if (isCeoAgent) pm.onCeoOutput = toolCallHandler;
-    }
-
     try {
       const result = await dispatchToAgent(
         agentProc,
@@ -284,10 +239,6 @@ export class MessageRouter {
         context,
         `channel-${channel.id}-${msg.id}`,
       );
-
-      // Stop capturing output
-      if (gw) gw.onAgentOutput = null;
-      pm.onCeoOutput = null;
 
       // Write agent response to JSONL
       const responseMsg: ChannelMessage = {
@@ -313,8 +264,6 @@ export class MessageRouter {
       this.daemon.gitManager.markDirty(target.displayName);
     } catch (err) {
       console.error(`[router] Dispatch to ${target.displayName} failed:`, err);
-      if (gw) gw.onAgentOutput = null;
-      pm.onCeoOutput = null;
     }
   }
 

@@ -122,11 +122,6 @@ After hiring, the agent appears in #general and you can @mention them.
 Only hire when the Founder asks you to, or when it's clearly needed for a task.`;
 }
 
-/**
- * Dispatch a message to an agent via OpenClaw's /v1/chat/completions.
- * Uses streaming (stream: true) to receive tool calls and text deltas
- * in real-time. Logs each step to the daemon console.
- */
 export async function dispatchToAgent(
   agent: AgentProcess,
   message: string,
@@ -139,7 +134,6 @@ export async function dispatchToAgent(
 
   const body: Record<string, unknown> = {
     model: agent.model,
-    stream: true,
     messages: [
       { role: 'system', content: systemMessage },
       { role: 'user', content: message },
@@ -165,76 +159,10 @@ export async function dispatchToAgent(
     throw new Error(`Agent ${agent.displayName} returned ${resp.status}: ${text}`);
   }
 
-  const contentType = resp.headers.get('content-type') ?? '';
-  const isSSE = contentType.includes('text/event-stream');
-
-  if (isSSE) {
-    // Streaming response — parse SSE chunks with real-time tool call logging
-    const content = await parseSSEStream(resp, agent.displayName);
-    return { content, model: agent.model };
-  }
-
-  // Non-streaming fallback (OpenClaw may not support stream on chat completions)
   const data = (await resp.json()) as {
     choices: { message: { content: string } }[];
     model: string;
   };
   const content = data.choices?.[0]?.message?.content ?? '';
   return { content, model: data.model ?? agent.model };
-}
-
-/** Parse an SSE stream from OpenClaw's chat completions, logging tool calls. */
-async function parseSSEStream(resp: Response, agentName: string): Promise<string> {
-  const reader = resp.body?.getReader();
-  if (!reader) {
-    // Fallback: non-streaming response
-    const data = await resp.json() as { choices: { message: { content: string } }[]; model: string };
-    return data.choices?.[0]?.message?.content ?? '';
-  }
-
-  const decoder = new TextDecoder();
-  let buffer = '';
-  let fullContent = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-
-    // Process complete SSE lines
-    const lines = buffer.split('\n');
-    buffer = lines.pop() ?? ''; // Keep incomplete line in buffer
-
-    for (const line of lines) {
-      if (!line.startsWith('data: ')) continue;
-      const data = line.slice(6).trim();
-      if (data === '[DONE]') continue;
-
-      try {
-        const chunk = JSON.parse(data);
-        const delta = chunk.choices?.[0]?.delta;
-
-        if (!delta) continue;
-
-        // Text content
-        if (delta.content) {
-          fullContent += delta.content;
-        }
-
-        // Tool calls — log them to daemon console
-        if (delta.tool_calls) {
-          for (const tc of delta.tool_calls) {
-            if (tc.function?.name) {
-              console.log(`[${agentName}] 🔧 ${tc.function.name}${tc.function.arguments ? `: ${tc.function.arguments.slice(0, 100)}` : ''}`);
-            }
-          }
-        }
-      } catch {
-        // Malformed chunk, skip
-      }
-    }
-  }
-
-  return fullContent;
 }
