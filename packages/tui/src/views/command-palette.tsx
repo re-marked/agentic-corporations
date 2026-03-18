@@ -109,8 +109,18 @@ export function CommandPalette({ channels, members, onNavigate, onSelectChannel,
         />
       </Box>
       <Box flexDirection="column" marginTop={0}>
-        {filtered.slice(0, 12).map((item, i) => {
-          const isSelected = i === selectedIndex;
+        {(() => {
+          const maxVisible = 20;
+          let start = 0;
+          if (selectedIndex >= maxVisible) {
+            start = selectedIndex - maxVisible + 1;
+          }
+          return filtered.slice(start, start + maxVisible);
+        })().map((item, i) => {
+          const maxVisible = 20;
+          const start = selectedIndex >= maxVisible ? selectedIndex - maxVisible + 1 : 0;
+          const actualIndex = start + i;
+          const isSelected = actualIndex === selectedIndex;
           return (
             <Box key={item.id} gap={1}>
               <Text color={isSelected ? COLORS.primary : COLORS.muted}>
@@ -129,8 +139,8 @@ export function CommandPalette({ channels, members, onNavigate, onSelectChannel,
         {filtered.length === 0 && (
           <Text color={COLORS.muted}>  No results</Text>
         )}
-        {filtered.length > 12 && (
-          <Text color={COLORS.muted}>  +{filtered.length - 12} more...</Text>
+        {filtered.length > 20 && (
+          <Text color={COLORS.muted}>  +{filtered.length - 20} more — type to filter</Text>
         )}
       </Box>
     </Box>
