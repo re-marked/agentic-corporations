@@ -177,24 +177,24 @@ export function MessageInput({ onSend, disabled, placeholder }: Props) {
     <Box flexDirection="column">
       {isTypingHire && (
         <Box paddingX={2}>
-          <Text color="magenta" bold>/hire</Text>
-          <Text dimColor> — open the agent hiring wizard (Enter to confirm)</Text>
+          <Text color="#E17055" bold>/hire</Text>
+          <Text color="#636E72"> — open the agent hiring wizard (Enter to confirm)</Text>
         </Box>
       )}
       {isTypingTask && (
         <Box paddingX={2}>
-          <Text color="yellow" bold>/task</Text>
-          <Text dimColor> — create a new task (Enter to confirm)</Text>
+          <Text color="#FDCB6E" bold>/task</Text>
+          <Text color="#636E72"> — create a new task (Enter to confirm)</Text>
         </Box>
       )}
-      <Box borderStyle="single" borderColor={disabled ? 'gray' : 'white'} paddingX={1}>
-        <Text bold color="green">&gt; </Text>
+      <Box borderStyle="round" borderColor={disabled ? '#636E72' : '#636E72'} paddingX={1}>
+        <Text bold color="#E17055">&gt; </Text>
         {disabled ? (
-          <Text dimColor>{placeholder ?? 'Waiting...'}</Text>
+          <Text color="#636E72">{placeholder ?? 'Waiting...'}</Text>
         ) : value.length === 0 ? (
           <>
             <Text inverse> </Text>
-            <Text dimColor>{placeholder ?? 'Type a message...'}</Text>
+            <Text color="#636E72">{placeholder ?? 'Type a message...'}</Text>
           </>
         ) : (
           renderInputText(value, cursor, hueOffset, true)
