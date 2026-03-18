@@ -18,6 +18,7 @@ import { CommandPalette } from './views/command-palette.js';
 import { TaskBoard } from './views/task-board.js';
 import { HierarchyView } from './views/hierarchy.js';
 import { AgentInspector } from './views/agent-inspector.js';
+import { TaskDetail } from './views/task-detail.js';
 import { StatusBar } from './components/status-bar.js';
 import { DaemonClient } from './lib/daemon-client.js';
 import { COLORS } from './theme.js';
@@ -227,6 +228,15 @@ function ResumeView({ corpPath }: { corpPath: string }) {
           <HierarchyView
             corpRoot={corpPath}
             onNavigate={navigate}
+            onBack={goBack}
+          />
+        );
+      case 'task-detail':
+        return (
+          <TaskDetail
+            corpRoot={corpPath}
+            taskId={current.taskId}
+            members={members}
             onBack={goBack}
           />
         );

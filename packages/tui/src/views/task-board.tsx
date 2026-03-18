@@ -37,6 +37,11 @@ export function TaskBoard({ corpRoot, members, daemonClient, onNavigate, onBack 
       setSelectedIndex((i) => Math.max(0, i - 1));
     } else if (key.downArrow) {
       setSelectedIndex((i) => Math.min(sorted.length - 1, i + 1));
+    } else if (key.return) {
+      const task = sorted[selectedIndex];
+      if (task) {
+        onNavigate({ type: 'task-detail', taskId: task.task.id });
+      }
     } else if (input === 'f') {
       setFilterIndex((i) => (i + 1) % FILTERS.length);
       setSelectedIndex(0);
