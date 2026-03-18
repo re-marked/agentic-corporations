@@ -82,9 +82,9 @@ Cross items off as they ship. Reference: `docs/` for full vision specs.
 - [x] Stale task detection in TASKS.md (10min assigned, 2hr in_progress warnings)
 
 ### Phase C (deferred to Layer 6)
-- [ ] Task board TUI view (list with filters and keyboard shortcuts)
-- [ ] Task detail view (full body + progress notes)
-- [ ] Task hierarchy rendering (parentTaskId indentation)
+- [x] Task board TUI view (list with filters and keyboard shortcuts)
+- [x] Task detail view (full body + progress notes)
+- [x] Task hierarchy rendering (parentTaskId indentation)
 
 ## Layer 5: Autonomy
 
@@ -109,12 +109,12 @@ Cross items off as they ship. Reference: `docs/` for full vision specs.
 
 ## Layer 6: Views
 
-- [ ] Corp home view (overview of all projects, corp-level agents)
-- [ ] Project home view (teams, channels, activity, task summary)
-- [ ] Agent home/inspector view (SOUL.md, BRAIN, status, current task)
-- [ ] Hierarchy tree view (box-drawing mafia tree, navigable)
-- [ ] Task board view (from Layer 4 Phase C)
-- [ ] Navigation polish (hotkeys, transitions)
+- [x] Corp home view (overview of all projects, corp-level agents)
+- [x] Project home view (teams, channels, activity, task summary)
+- [x] Agent home/inspector view (SOUL.md, BRAIN, status, current task)
+- [x] Hierarchy tree view (box-drawing mafia tree, navigable)
+- [x] Task board view (from Layer 4 Phase C)
+- [x] Navigation polish (hotkeys, transitions)
 
 ## Layer 7: Externals
 
