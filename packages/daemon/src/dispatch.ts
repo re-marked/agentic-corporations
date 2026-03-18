@@ -165,10 +165,22 @@ export async function dispatchToAgent(
     throw new Error(`Agent ${agent.displayName} returned ${resp.status}: ${text}`);
   }
 
-  // Parse SSE stream
-  const content = await parseSSEStream(resp, agent.displayName);
+  const contentType = resp.headers.get('content-type') ?? '';
+  const isSSE = contentType.includes('text/event-stream');
 
-  return { content, model: agent.model };
+  if (isSSE) {
+    // Streaming response — parse SSE chunks with real-time tool call logging
+    const content = await parseSSEStream(resp, agent.displayName);
+    return { content, model: agent.model };
+  }
+
+  // Non-streaming fallback (OpenClaw may not support stream on chat completions)
+  const data = (await resp.json()) as {
+    choices: { message: { content: string } }[];
+    model: string;
+  };
+  const content = data.choices?.[0]?.message?.content ?? '';
+  return { content, model: data.model ?? agent.model };
 }
 
 /** Parse an SSE stream from OpenClaw's chat completions, logging tool calls. */
