@@ -14,7 +14,7 @@ import { join } from 'node:path';
 import { ViewStack, type View } from './navigation.js';
 import { OnboardingView } from './views/onboarding.js';
 import { ChatView } from './views/chat.js';
-import { ChannelSwitcher } from './views/channel-switcher.js';
+import { CommandPalette } from './views/command-palette.js';
 import { TaskBoard } from './views/task-board.js';
 import { HierarchyView } from './views/hierarchy.js';
 import { AgentInspector } from './views/agent-inspector.js';
@@ -152,19 +152,28 @@ function ResumeView({ corpPath }: { corpPath: string }) {
     );
   }
 
-  // Channel switcher overlay
+  // Command palette overlay
   if (showSwitcher) {
-    const currentView = viewStack.current();
-    const currentChannelId = currentView?.type === 'chat' ? currentView.channelId : '';
     return (
       <Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
-        <ChannelSwitcher
+        <CommandPalette
           channels={channels}
-          currentChannelId={currentChannelId}
-          onSelect={(ch) => {
+          members={members}
+          onNavigate={(view) => {
+            navigate(view);
+            setShowSwitcher(false);
+          }}
+          onSelectChannel={(ch) => {
             viewStack.replace({ type: 'chat', channelId: ch.id });
             setShowSwitcher(false);
             forceRender((n) => n + 1);
+          }}
+          onCommand={(cmd) => {
+            setShowSwitcher(false);
+            // Commands handled by ChatView when it renders
+            if (cmd === 'hire' || cmd === 'task') {
+              // Navigate to chat first, then the command will be handled
+            }
           }}
           onClose={() => setShowSwitcher(false)}
         />

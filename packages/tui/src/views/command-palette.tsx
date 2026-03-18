@@ -1,0 +1,138 @@
+import React, { useState } from 'react';
+import { Box, Text, useInput } from 'ink';
+import TextInput from 'ink-text-input';
+import type { Channel, Member } from '@agentcorp/shared';
+import { COLORS, BORDER_STYLE } from '../theme.js';
+import type { View } from '../navigation.js';
+
+interface PaletteItem {
+  id: string;
+  label: string;
+  kind: 'channel' | 'agent' | 'view' | 'command';
+  icon: string;
+  action: () => void;
+}
+
+interface Props {
+  channels: Channel[];
+  members: Member[];
+  onNavigate: (view: View) => void;
+  onSelectChannel: (channel: Channel) => void;
+  onCommand: (cmd: string) => void;
+  onClose: () => void;
+}
+
+export function CommandPalette({ channels, members, onNavigate, onSelectChannel, onCommand, onClose }: Props) {
+  const [query, setQuery] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const agents = members.filter((m) => m.type === 'agent');
+
+  // Build all items
+  const items: PaletteItem[] = [
+    // Views
+    { id: 'v-hierarchy', label: 'Hierarchy', kind: 'view', icon: '◇', action: () => onNavigate({ type: 'hierarchy' }) },
+    { id: 'v-tasks', label: 'Task Board', kind: 'view', icon: '◆', action: () => onNavigate({ type: 'task-board' }) },
+    // Commands
+    { id: 'c-hire', label: '/hire', kind: 'command', icon: '▸', action: () => onCommand('hire') },
+    { id: 'c-task', label: '/task', kind: 'command', icon: '▸', action: () => onCommand('task') },
+    // Channels
+    ...channels.map((ch) => ({
+      id: `ch-${ch.id}`,
+      label: `#${ch.name}`,
+      kind: 'channel' as const,
+      icon: ch.kind === 'direct' ? '◆' : '#',
+      action: () => onSelectChannel(ch),
+    })),
+    // Agents
+    ...agents.map((m) => ({
+      id: `ag-${m.id}`,
+      label: m.displayName,
+      kind: 'agent' as const,
+      icon: '◆',
+      action: () => onNavigate({ type: 'agent-inspector', memberId: m.id }),
+    })),
+  ];
+
+  // Filter
+  const q = query.toLowerCase();
+  const filtered = q
+    ? items.filter((item) => item.label.toLowerCase().includes(q) || item.kind.includes(q))
+    : items;
+
+  useInput((input, key) => {
+    if (key.escape || key.tab || input === '\t') {
+      onClose();
+      return;
+    }
+    if (key.upArrow) {
+      setSelectedIndex((i) => Math.max(0, i - 1));
+      return;
+    }
+    if (key.downArrow) {
+      setSelectedIndex((i) => Math.min(filtered.length - 1, i + 1));
+      return;
+    }
+    if (key.return) {
+      const selected = filtered[selectedIndex];
+      if (selected) selected.action();
+      return;
+    }
+  });
+
+  const handleQueryChange = (v: string) => {
+    setQuery(v);
+    setSelectedIndex(0);
+  };
+
+  const kindColor: Record<string, string> = {
+    channel: COLORS.primary,
+    agent: COLORS.secondary,
+    view: COLORS.subtle,
+    command: COLORS.success,
+  };
+
+  return (
+    <Box
+      flexDirection="column"
+      borderStyle={BORDER_STYLE}
+      borderColor={COLORS.primary}
+      paddingX={1}
+      width={55}
+    >
+      <Box>
+        <Text bold color={COLORS.primary}>&gt; </Text>
+        <TextInput
+          value={query}
+          onChange={handleQueryChange}
+          placeholder="Search channels, agents, views..."
+        />
+      </Box>
+      <Box flexDirection="column" marginTop={0}>
+        {filtered.slice(0, 12).map((item, i) => {
+          const isSelected = i === selectedIndex;
+          return (
+            <Box key={item.id} gap={1}>
+              <Text color={isSelected ? COLORS.primary : COLORS.muted}>
+                {isSelected ? '▸' : ' '}
+              </Text>
+              <Text
+                bold={isSelected}
+                color={isSelected ? COLORS.text : COLORS.subtle}
+              >
+                {item.label}
+              </Text>
+              <Text color={kindColor[item.kind] ?? COLORS.muted}>{item.kind}</Text>
+            </Box>
+          );
+        })}
+        {filtered.length === 0 && (
+          <Text color={COLORS.muted}>  No results</Text>
+        )}
+        {filtered.length > 12 && (
+          <Text color={COLORS.muted}>  +{filtered.length - 12} more...</Text>
+        )}
+      </Box>
+    </Box>
+  );
+}

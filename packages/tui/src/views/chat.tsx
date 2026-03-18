@@ -192,7 +192,7 @@ export function ChatView({ channel, members: initialMembers, messagesPath, daemo
     <Box flexDirection="column" flexGrow={1}>
       <Box borderStyle="round" borderColor={COLORS.border} paddingX={1}>
         <Text bold color={COLORS.primary}># {channel.name}</Text>
-        <Text color={COLORS.muted}>  Tab to switch  /hire  /task</Text>
+        <Text color={COLORS.muted}>  Tab: command palette</Text>
       </Box>
       <Box flexDirection="column" flexGrow={1} paddingX={1} paddingY={1}>
         <MessageList messages={messages} members={members} />
