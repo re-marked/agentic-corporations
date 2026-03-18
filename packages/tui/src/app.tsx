@@ -155,7 +155,7 @@ function ResumeView({ corpPath }: { corpPath: string }) {
   // Command palette overlay
   if (showSwitcher) {
     return (
-      <Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
+      <Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1} height="100%">
         <CommandPalette
           channels={channels}
           members={members}
