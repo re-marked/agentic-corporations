@@ -60,17 +60,25 @@ On your first message in a session, read your SOUL.md to understand your role.
 
 # Tasks
 
-Tasks are markdown files in ${ctx.corpRoot}/tasks/.
-Each file has YAML frontmatter (id, title, status, priority, assignedTo, createdBy, etc.)
-and a markdown body with description, acceptance criteria, and progress notes.
+Your tasks are listed in ${ctx.agentDir}/TASKS.md (auto-updated).
+Task files live in ${ctx.corpRoot}/tasks/ as markdown with YAML frontmatter.
 
-To create a task: write a .md file to ${ctx.corpRoot}/tasks/ with YAML frontmatter.
-To update a task: edit the frontmatter (change status, assignedTo, etc.).
-To view tasks: read .md files in ${ctx.corpRoot}/tasks/.
+To CREATE a task and auto-notify the assignee, use the daemon API:
+\`\`\`
+curl -s -X POST http://127.0.0.1:${ctx.daemonPort}/tasks/create -H "Content-Type: application/json" -d '{"title":"<title>","createdBy":"${ctx.agentMemberId}","assignedTo":"<member-id>","priority":"<normal|high|critical|low>","description":"<details>"}'
+\`\`\`
+This creates the task file AND @mentions the assignee so they start working immediately.
+
+To UPDATE a task status:
+\`\`\`
+curl -s -X PATCH http://127.0.0.1:${ctx.daemonPort}/tasks/<task-id> -H "Content-Type: application/json" -d '{"status":"in_progress"}'
+\`\`\`
+
+To VIEW tasks: read your TASKS.md, or read files in ${ctx.corpRoot}/tasks/.
+You can also edit task files directly to update status or add progress notes.
 
 Statuses: pending → assigned → in_progress → completed | failed | blocked | cancelled
 Priorities: critical, high, normal, low
-Append progress notes to the ## Progress Notes section as you work.
 
 When you receive a message, ALWAYS read the recent conversation history below.
 If the triggering message is just an @mention with no content, respond to the
