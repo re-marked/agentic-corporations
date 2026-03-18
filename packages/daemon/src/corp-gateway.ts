@@ -185,6 +185,7 @@ export class CorpGateway {
     // Health check
     await this.healthCheck();
     this._status = 'ready';
+    this.startHealthMonitor();
     console.log(`[gateway] Corp gateway ready on port ${this._port} with ${this.listAgents().length} agents`);
   }
 
@@ -228,16 +229,63 @@ export class CorpGateway {
         body: JSON.stringify({ model: 'openclaw:main', messages: [] }),
         signal: AbortSignal.timeout(2000),
       });
-      if (resp.status < 500) {
-        // Gateway is alive — adopt it
+      // Only adopt if auth passes (not 401/403)
+      if (resp.status < 400) {
         this._status = 'ready';
+        this.startHealthMonitor();
         console.log(`[gateway] Adopted existing gateway on port ${this._port} with ${this.listAgents().length} agents`);
         return true;
+      }
+      // 401 = wrong token, stale gateway — kill it
+      if (resp.status === 401) {
+        console.log(`[gateway] Stale gateway on port ${this._port} (wrong token), killing...`);
+        await this.killPortHolder();
       }
     } catch {
       // Not running — need to spawn
     }
     return false;
+  }
+
+  /** Kill whatever process holds our port. */
+  private async killPortHolder(): Promise<void> {
+    try {
+      const { execa: run } = await import('execa');
+      const check = await run('cmd', ['/c', `netstat -ano | findstr :${this._port} | findstr LISTENING`], { reject: false, timeout: 5000 });
+      if (check.stdout) {
+        const match = check.stdout.trim().match(/\s(\d+)\s*$/m);
+        if (match?.[1]) {
+          await run('taskkill', ['/F', '/PID', match[1]], { reject: false, timeout: 5000 });
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+      }
+    } catch {}
+  }
+
+  /** Periodically check if the gateway is still alive. Mark agents crashed if not. */
+  private startHealthMonitor(): void {
+    const interval = setInterval(async () => {
+      if (this._status !== 'ready') {
+        clearInterval(interval);
+        return;
+      }
+      try {
+        await fetch(`http://127.0.0.1:${this._port}/v1/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this._token}`,
+          },
+          body: JSON.stringify({ model: 'openclaw:main', messages: [] }),
+          signal: AbortSignal.timeout(3000),
+        });
+      } catch {
+        console.error(`[gateway] Corp gateway died — agents will fail until restart`);
+        this._status = 'stopped';
+        this.process = null;
+        clearInterval(interval);
+      }
+    }, 30_000); // Check every 30s
   }
 
   private async healthCheck(): Promise<void> {
