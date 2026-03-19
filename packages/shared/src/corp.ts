@@ -156,7 +156,7 @@ function registerCorp(name: string, path: string): void {
 export function listCorps(): { name: string; path: string }[] {
   const index = readConfigOr<CorpsIndex>(CORPS_INDEX_PATH, { corps: [] });
   // Filter out entries where the directory was deleted
-  return index.corps.filter((c) => existsSync(c.path));
+  return index.corps.filter((c) => existsSync(join(c.path, MEMBERS_JSON)));
 }
 
 export function findCorp(name: string): string | null {
