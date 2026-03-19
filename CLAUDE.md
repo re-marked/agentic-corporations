@@ -149,10 +149,42 @@ The entire corp is a git repo. Every change = commit.
 ## Commands
 
 ```bash
-pnpm dev              # Run all packages in dev mode
-pnpm build            # Build all
+pnpm build            # Build all packages (MUST run before testing)
 pnpm type-check       # Type-check all
 ```
+
+### Running the TUI
+
+```bash
+# From the repo root:
+npx tsx packages/tui/src/index.tsx
+
+# Or after building:
+node packages/tui/dist/index.js
+```
+
+**NOTE**: The TUI needs a real TTY (terminal). It will NOT work from Claude Code's bash tool.
+The user runs it from their Windows cmd terminal and pastes output back.
+
+### Fresh start (delete corp + reset)
+
+On Windows cmd:
+```cmd
+rmdir /s /q %USERPROFILE%\.claudecorp\my-corporation
+echo {"corps":[]} > %USERPROFILE%\.claudecorp\corps\index.json
+cd %USERPROFILE%\agentcorp
+npx tsx packages/tui/src/index.tsx
+```
+
+On bash/MSYS2:
+```bash
+rm -rf ~/.claudecorp/my-corporation
+echo '{"corps":[]}' > ~/.claudecorp/corps/index.json
+cd ~/agentcorp && npx tsx packages/tui/src/index.tsx
+```
+
+**IMPORTANT**: The user is on Windows cmd. Use `rmdir /s /q` not `rm -rf`.
+Use `%USERPROFILE%` not `~/`. Give full absolute paths always.
 
 ## Branching Strategy
 
