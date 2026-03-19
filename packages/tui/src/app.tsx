@@ -49,7 +49,11 @@ function ResumeView({ corpPath }: { corpPath: string }) {
   const viewStack = useMemo(() => new ViewStack(), []);
 
   const navigate = useCallback((view: View) => {
-    viewStack.push(view);
+    if (view.type === 'corp-home') {
+      viewStack.clear(view);
+    } else {
+      viewStack.push(view);
+    }
     forceRender((n) => n + 1);
   }, [viewStack]);
 
