@@ -1,4 +1,4 @@
-import { writeFileSync, existsSync, unlinkSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Server } from 'node:http';
 import {
@@ -44,6 +44,9 @@ export class Daemon {
   }
 
   async start(): Promise<number> {
+    // Ensure .gateway/ is gitignored (older corps may lack this)
+    this.ensureGatewayGitignored();
+
     // Start HTTP API
     this.server = createApi(this);
 
@@ -182,6 +185,18 @@ export class Daemon {
 
   getPort(): number {
     return this.port;
+  }
+
+  /** Patch .gitignore to exclude .gateway/ if not already present. */
+  private ensureGatewayGitignored(): void {
+    try {
+      const gitignorePath = join(this.corpRoot, '.gitignore');
+      if (!existsSync(gitignorePath)) return;
+      const content = readFileSync(gitignorePath, 'utf-8');
+      if (!content.includes('.gateway/')) {
+        writeFileSync(gitignorePath, content.trimEnd() + '\n\n# Corp gateway runtime state\n.gateway/\n', 'utf-8');
+      }
+    } catch {}
   }
 }
 
