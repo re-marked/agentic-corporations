@@ -1,5 +1,6 @@
 import { execa, type ResultPromise } from 'execa';
 import { join } from 'node:path';
+import { homedir } from 'node:os';
 import { mkdirSync, existsSync } from 'node:fs';
 import {
   type GlobalConfig,
@@ -92,22 +93,21 @@ export class CorpGateway {
     const agentDir = join(this.gatewayDir, 'agents', agentId, 'agent');
     mkdirSync(agentDir, { recursive: true });
 
-    // Write auth for all configured providers
-    const profiles: Record<string, unknown> = {};
-    for (const [provider, key] of Object.entries(this.globalConfig.apiKeys)) {
-      if (key) {
-        profiles[`${provider}:default`] = {
-          type: 'token',
-          provider,
-          token: key,
-        };
+    // Copy auth from user's OpenClaw (the source of truth for API keys)
+    const userAuthPath = join(homedir(), '.openclaw', 'agents', 'main', 'agent', 'auth-profiles.json');
+    if (existsSync(userAuthPath)) {
+      const userAuth = readConfig<Record<string, unknown>>(userAuthPath);
+      writeConfig(join(agentDir, 'auth-profiles.json'), userAuth);
+    } else {
+      // Fallback: try globalConfig.apiKeys
+      const profiles: Record<string, unknown> = {};
+      for (const [provider, key] of Object.entries(this.globalConfig.apiKeys)) {
+        if (key) {
+          profiles[`${provider}:default`] = { type: 'token', provider, token: key };
+        }
       }
+      writeConfig(join(agentDir, 'auth-profiles.json'), { version: 1, profiles });
     }
-
-    writeConfig(join(agentDir, 'auth-profiles.json'), {
-      version: 1,
-      profiles,
-    });
   }
 
   /** Check if any agents are registered. */
