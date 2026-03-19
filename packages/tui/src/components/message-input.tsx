@@ -187,7 +187,8 @@ export function MessageInput({ onSend, disabled, placeholder }: Props) {
           <Text color="#FDCB6E" bold>/task</Text>
           <Text color="#E17055" bold>/project</Text>
           <Text color="#FFEAA7" bold>/team</Text>
-          <Text color="#B2BEC3" bold>/h <Text color="#636E72">hierarchy</Text>  /t <Text color="#636E72">tasks</Text>  /a <Text color="#636E72">agents</Text></Text>
+          <Text color="#00B894" bold>/dogfood</Text>
+          <Text color="#B2BEC3" bold>/h <Text color="#636E72">hierarchy</Text>  /t <Text color="#636E72">tasks</Text>  /a <Text color="#636E72">agents</Text>  /home</Text>
         </Box>
       )}
       {isTypingHire && (

@@ -31,6 +31,7 @@ export function CommandPalette({ channels, members, onNavigate, onSelectChannel,
   // Build all items
   const items: PaletteItem[] = [
     // Views
+    { id: 'v-home', label: 'Corp Home', kind: 'view', icon: '◆', action: () => onNavigate({ type: 'corp-home' }) },
     { id: 'v-hierarchy', label: 'Hierarchy', kind: 'view', icon: '◇', action: () => onNavigate({ type: 'hierarchy' }) },
     { id: 'v-tasks', label: 'Task Board', kind: 'view', icon: '◆', action: () => onNavigate({ type: 'task-board' }) },
     // Commands
@@ -38,6 +39,7 @@ export function CommandPalette({ channels, members, onNavigate, onSelectChannel,
     { id: 'c-task', label: '/task', kind: 'command', icon: '▸', action: () => onCommand('task') },
     { id: 'c-project', label: '/project', kind: 'project', icon: '▸', action: () => onCommand('project') },
     { id: 'c-team', label: '/team', kind: 'command', icon: '▸', action: () => onCommand('team') },
+    { id: 'c-dogfood', label: '/dogfood', kind: 'command', icon: '▸', action: () => onCommand('dogfood') },
     // Channels
     ...channels.map((ch) => ({
       id: `ch-${ch.id}`,
