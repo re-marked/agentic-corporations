@@ -14,6 +14,7 @@ import {
 import { join } from 'node:path';
 import { MessageList } from '../components/message-list.js';
 import { MessageInput } from '../components/message-input.js';
+import { MemberSidebar } from '../components/member-sidebar.js';
 import { useMessages } from '../hooks/use-messages.js';
 import { HireWizard } from './hire-wizard.js';
 import { COLORS, BORDER_STYLE } from '../theme.js';
@@ -44,6 +45,7 @@ export function ChatView({ channel, members: initialMembers, messagesPath, daemo
   const [showTaskWizard, setShowTaskWizard] = useState(false);
   const [showProjectWizard, setShowProjectWizard] = useState(false);
   const [showTeamWizard, setShowTeamWizard] = useState(false);
+  const [showMemberSidebar, setShowMemberSidebar] = useState(false);
   const lastMsgCount = useRef(messages.length);
 
   // Refresh members when new messages arrive (new agents may have been hired)
@@ -83,6 +85,9 @@ export function ChatView({ channel, members: initialMembers, messagesPath, daemo
     if (showHireWizard) return;
     if (key.tab || input === '\t') {
       onSwitchChannel?.();
+    }
+    if (input === 'm' || input === 'M') {
+      setShowMemberSidebar(prev => !prev);
     }
   });
 
@@ -213,11 +218,20 @@ You are Atlas, the Tech Lead of the Claude Corp dev team.
 - Review code quality, ensure changes follow existing patterns
 - The codebase is at: ${repoPath}
 - Packages: shared/ (types, parsers), daemon/ (router, process manager, gateway), tui/ (Ink/React terminal UI)
+- Build command: cd ${repoPath} && pnpm build
+
+# CRITICAL: You write REAL code
+
+- You must ACTUALLY read files, write code, and run builds. Not describe what you would do.
+- Use the write tool to create/modify files. Use bash to run builds and verify.
+- Never claim something "already exists" without reading the actual file path first.
+- After completing work: list every file you created or modified, and run pnpm build to prove it compiles.
+- If a task says "implement X", that means X does NOT exist yet. Create it.
 
 # Communication Style
 
 Direct, technical, encouraging. Lead with specifics — file paths, function names, concrete suggestions.
-When delegating, give clear acceptance criteria. When reviewing, be constructive.`,
+When delegating, give clear acceptance criteria. When reviewing, check their actual file diffs.`,
         });
         writeSystemMessage('Atlas (Tech Lead) hired.');
 
@@ -237,11 +251,20 @@ You are Pixel, a Frontend Developer specializing in terminal UIs.
 - Work with React/Ink to create beautiful terminal interfaces
 - The codebase is at: ${repoPath}
 - Key files: packages/tui/src/views/, packages/tui/src/components/, packages/tui/src/theme.ts
+- Build command: cd ${repoPath} && pnpm build
+
+# CRITICAL: You write REAL code
+
+- You must ACTUALLY create .tsx files and modify existing ones. Use the write tool.
+- Read existing views (chat.tsx, hierarchy.tsx) to understand patterns BEFORE writing.
+- After writing code, run: cd ${repoPath} && pnpm build — if it fails, fix the errors.
+- Never claim a component exists unless you read the file and saw the code.
+- Your deliverable is working code, not descriptions of code.
 
 # Communication Style
 
 Creative, detail-oriented. You care about aesthetics AND usability.
-Show your work — describe what the UI will look like. Ask about edge cases.`,
+Show your work — paste key snippets of what you wrote. Ask about edge cases.`,
         });
         writeSystemMessage('Pixel (Frontend Dev) hired.');
 
@@ -261,6 +284,15 @@ You are Forge, a Backend Developer focused on the daemon and shared libraries.
 - Maintain shared types and utilities (packages/shared/)
 - The codebase is at: ${repoPath}
 - Key files: packages/daemon/src/, packages/shared/src/
+- Build command: cd ${repoPath} && pnpm build
+
+# CRITICAL: You write REAL code
+
+- You must ACTUALLY create/modify .ts files. Use the write tool.
+- Read existing code (daemon.ts, router.ts, process-manager.ts) to understand patterns BEFORE writing.
+- After writing code, run: cd ${repoPath} && pnpm build — if it fails, fix the errors.
+- Never claim something works without running the build. Never claim a file exists without reading it.
+- Your deliverable is working code, not descriptions of code.
 
 # Communication Style
 
@@ -402,19 +434,28 @@ Always consider what happens when things go wrong.`,
       <Box borderStyle="round" borderColor={COLORS.border} paddingX={1}>
         <Text bold color={COLORS.primary}># {channel.name}</Text>
         <Text color={COLORS.muted}>  Tab: command palette</Text>
+        {!showMemberSidebar && <Text color={COLORS.muted}>  m: members</Text>}
       </Box>
-      <Box flexDirection="column" flexGrow={1} paddingX={1} paddingY={1}>
-        <MessageList messages={messages} members={members} />
-        {thinking && (
-          <Box gap={1} marginTop={1}>
-            <Text color={COLORS.primary}><Spinner type="dots" /></Text>
-            <Text color={COLORS.subtle}>
-              {thinkingAgents.length > 0
-                ? `${thinkingAgents.join(', ')} ${thinkingAgents.length === 1 ? 'is' : 'are'} typing...`
-                : 'Thinking...'}
-            </Text>
-          </Box>
-        )}
+      <Box flexDirection="row" flexGrow={1}>
+        <Box flexDirection="column" flexGrow={1} paddingX={1} paddingY={1}>
+          <MessageList messages={messages} members={members} />
+          {thinking && (
+            <Box gap={1} marginTop={1}>
+              <Text color={COLORS.primary}><Spinner type="dots" /></Text>
+              <Text color={COLORS.subtle}>
+                {thinkingAgents.length > 0
+                  ? `${thinkingAgents.join(', ')} ${thinkingAgents.length === 1 ? 'is' : 'are'} typing...`
+                  : 'Thinking...'}
+              </Text>
+            </Box>
+          )}
+        </Box>
+        <MemberSidebar 
+          members={members} 
+          channelMemberIds={channel.memberIds} 
+          visible={showMemberSidebar}
+          daemonClient={daemonClient}
+        />
       </Box>
       <MessageInput
         onSend={handleSend}

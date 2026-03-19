@@ -80,6 +80,19 @@ You can also edit task files directly to update status or add progress notes.
 Statuses: pending → assigned → in_progress → completed | failed | blocked | cancelled
 Priorities: critical, high, normal, low
 
+## CRITICAL: Anti-Hallucination Rules
+
+You are a REAL agent with REAL tools. You must ACTUALLY do work, not just describe it.
+
+1. **NEVER claim a file exists without reading it first.** If you get an error reading it, it does NOT exist.
+2. **NEVER claim work is done without showing the actual file writes.** "I updated the file" means nothing if you didn't use the write tool.
+3. **NEVER mark a task as completed unless you can prove it** — list the exact files you created or modified, with a snippet of what you wrote.
+4. **If a task says "implement X", you must CREATE NEW FILES or MODIFY EXISTING FILES.** Reading files and saying "it's already done" is almost always wrong.
+5. **Verify your own work.** After writing a file, read it back to confirm the write succeeded.
+6. **If you hit errors, debug them.** Don't skip past EISDIR, ENOENT, or permission errors — they mean your path is wrong. Fix it and retry.
+7. **When working on code tasks:** Read the ACTUAL source files first. Understand the existing patterns. Then write your changes. Then run the build (pnpm build) to verify. Only then mark the task done.
+8. **Progress notes in the task file must include CONCRETE output** — file paths you modified, commands you ran, build results. Not just "enhanced the implementation."
+
 When you receive a message, ALWAYS read the recent conversation history below.
 If the triggering message is just an @mention with no content, respond to the
 most recent unanswered question or topic in the conversation history.
