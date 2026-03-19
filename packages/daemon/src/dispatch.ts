@@ -128,8 +128,6 @@ export async function dispatchToAgent(
   context: DispatchContext,
   sessionUser?: string,
 ): Promise<DispatchResult> {
-  const url = `http://127.0.0.1:${agent.port}/v1/chat/completions`;
-
   const systemMessage = buildSystemMessage(context);
 
   const body: Record<string, unknown> = {
@@ -144,25 +142,53 @@ export async function dispatchToAgent(
     body.user = sessionUser;
   }
 
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${agent.gatewayToken}`,
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(15 * 60 * 1000),
-  });
+  // Try dispatch with one retry on transient failures (connection error, 401, 502-504)
+  let lastError: Error | null = null;
 
-  if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error(`Agent ${agent.displayName} returned ${resp.status}: ${text}`);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const url = `http://127.0.0.1:${agent.port}/v1/chat/completions`;
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${agent.gatewayToken}`,
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(15 * 60 * 1000),
+      });
+
+      if (resp.ok) {
+        const data = (await resp.json()) as {
+          choices: { message: { content: string } }[];
+          model: string;
+        };
+        const content = data.choices?.[0]?.message?.content ?? '';
+        return { content, model: data.model ?? agent.model };
+      }
+
+      // Retryable HTTP errors
+      if ((resp.status === 401 || resp.status >= 502) && attempt === 0) {
+        const text = await resp.text();
+        lastError = new Error(`Agent ${agent.displayName} returned ${resp.status}: ${text}`);
+        console.error(`[dispatch] ${agent.displayName} returned ${resp.status}, retrying in 3s...`);
+        await new Promise((r) => setTimeout(r, 3000));
+        continue;
+      }
+
+      const text = await resp.text();
+      throw new Error(`Agent ${agent.displayName} returned ${resp.status}: ${text}`);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('returned')) throw err;
+      // Connection-level error (gateway down) — retry once
+      lastError = err instanceof Error ? err : new Error(String(err));
+      if (attempt === 0) {
+        console.error(`[dispatch] ${agent.displayName} unreachable, retrying in 3s...`);
+        await new Promise((r) => setTimeout(r, 3000));
+        continue;
+      }
+    }
   }
 
-  const data = (await resp.json()) as {
-    choices: { message: { content: string } }[];
-    model: string;
-  };
-  const content = data.choices?.[0]?.message?.content ?? '';
-  return { content, model: data.model ?? agent.model };
+  throw lastError ?? new Error(`Dispatch to ${agent.displayName} failed after retry`);
 }

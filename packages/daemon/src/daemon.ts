@@ -75,10 +75,21 @@ export class Daemon {
   }
 
   async spawnAllAgents(): Promise<void> {
-    // Initialize the shared corp gateway before spawning agents
-    await this.processManager.initCorpGateway();
+    // Initialize the shared corp gateway — if it fails, CEO may still work via remote
+    try {
+      await this.processManager.initCorpGateway();
+    } catch (err) {
+      console.error(`[daemon] Corp gateway init failed (agents may start later):`, err);
+    }
 
-    const members = readConfig<Member[]>(join(this.corpRoot, MEMBERS_JSON));
+    let members: Member[];
+    try {
+      members = readConfig<Member[]>(join(this.corpRoot, MEMBERS_JSON));
+    } catch (err) {
+      console.error(`[daemon] Failed to read members.json:`, err);
+      return;
+    }
+
     const agents = members.filter((m) => m.type === 'agent' && m.status !== 'archived');
 
     for (const agent of agents) {
