@@ -112,7 +112,13 @@ export class MessageRouter {
     this.watchers.set(channel.id, watcher);
   }
 
+  /** Debounce guard — Windows fs.watch fires multiple times per write */
+  private processing = new Set<string>();
+
   private onFileChange(channel: Channel, msgPath: string): void {
+    if (this.processing.has(msgPath)) return;
+    this.processing.add(msgPath);
+
     const currentOffset = this.offsets.get(msgPath) ?? 0;
     const { messages, newOffset } = readNewLines(msgPath, currentOffset);
     this.offsets.set(msgPath, newOffset);
@@ -120,6 +126,9 @@ export class MessageRouter {
     for (const msg of messages) {
       this.processMessage(msg, channel);
     }
+
+    // Allow re-processing after a short delay
+    setTimeout(() => this.processing.delete(msgPath), 200);
   }
 
   private processMessage(msg: ChannelMessage, channel: Channel): void {
