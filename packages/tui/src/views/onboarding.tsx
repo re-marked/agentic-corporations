@@ -27,7 +27,7 @@ type Step = 'your-name' | 'corp-name' | 'theme' | 'spawning' | 'ready';
 
 const THEMES = getAllThemes();
 
-export function OnboardingView() {
+export function OnboardingView({ onComplete }: { onComplete?: () => void }) {
   const [step, setStep] = useState<Step>('your-name');
   const [userName, setUserName] = useState('');
   const [corpName, setCorpName] = useState('');
@@ -157,6 +157,15 @@ export function OnboardingView() {
       kickoff.originId = kickoff.id;
       append(dmPath, kickoff);
 
+      // Stop this daemon — ResumeView will create its own
+      d.stop();
+      setDaemon(null);
+
+      // Transition to ResumeView (which shows Corp Home)
+      if (onComplete) {
+        onComplete();
+        return;
+      }
       setStep('ready');
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

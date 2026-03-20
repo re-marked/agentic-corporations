@@ -19,15 +19,17 @@ import { TaskBoard } from './views/task-board.js';
 import { HierarchyView } from './views/hierarchy.js';
 import { AgentInspector } from './views/agent-inspector.js';
 import { TaskDetail } from './views/task-detail.js';
+import { CorpHome } from './views/corp-home.js';
 import { StatusBar } from './components/status-bar.js';
 import { DaemonClient } from './lib/daemon-client.js';
 import { COLORS } from './theme.js';
 
 export function App() {
+  const [, forceReload] = useState(0);
   const corps = listCorps();
 
   if (corps.length === 0) {
-    return <OnboardingView />;
+    return <OnboardingView onComplete={() => forceReload((n) => n + 1)} />;
   }
 
   return <ResumeView corpPath={corps[0]!.path} />;
@@ -47,7 +49,11 @@ function ResumeView({ corpPath }: { corpPath: string }) {
   const viewStack = useMemo(() => new ViewStack(), []);
 
   const navigate = useCallback((view: View) => {
-    viewStack.push(view);
+    if (view.type === 'corp-home') {
+      viewStack.clear(view);
+    } else {
+      viewStack.push(view);
+    }
     forceRender((n) => n + 1);
   }, [viewStack]);
 
@@ -95,38 +101,44 @@ function ResumeView({ corpPath }: { corpPath: string }) {
         setClient(new DaemonClient(port));
 
         setStatus('Spawning agents...');
-        await d.spawnAllAgents();
+        try {
+          await d.spawnAllAgents();
+        } catch (err) {
+          console.error('[startup] Agent spawning had errors:', err);
+          // Continue — partial corp is better than no corp
+        }
 
-        for (let i = 0; i < 30; i++) {
+        // Wait for at least one agent (non-blocking timeout)
+        for (let i = 0; i < 15; i++) {
           const agents = d.processManager.listAgents();
           if (agents.some((a) => a.status === 'ready')) break;
           await new Promise((r) => setTimeout(r, 1000));
         }
 
-        d.startRouter();
+        try {
+          d.startRouter();
+        } catch (err) {
+          console.error('[startup] Router start failed:', err);
+        }
 
-        const allMembers = readConfig<Member[]>(join(corpPath, MEMBERS_JSON));
-        const allChannels = readConfig<Channel[]>(join(corpPath, CHANNELS_JSON));
+        // Read corp data — use safe fallbacks for corrupted files
+        let allMembers: Member[] = [];
+        let allChannels: Channel[] = [];
+        try {
+          allMembers = readConfig<Member[]>(join(corpPath, MEMBERS_JSON));
+        } catch {
+          console.error('[startup] members.json unreadable');
+        }
+        try {
+          allChannels = readConfig<Channel[]>(join(corpPath, CHANNELS_JSON));
+        } catch {
+          console.error('[startup] channels.json unreadable');
+        }
         setMembers(allMembers);
         setChannels(allChannels);
 
-        // Default: CEO DM
-        const founder = allMembers.find((m) => m.rank === 'owner');
-        const ceo = allMembers.find((m) => m.rank === 'master');
-        let defaultChannel = allChannels.find(
-          (c) => c.kind === 'direct' && founder && ceo &&
-          c.memberIds.includes(founder.id) && c.memberIds.includes(ceo.id),
-        );
-        if (!defaultChannel) {
-          defaultChannel = allChannels.find((c) => c.name === 'general');
-        }
-
-        if (defaultChannel) {
-          viewStack.clear({ type: 'chat', channelId: defaultChannel.id });
-        } else {
-          setError('No channels found');
-          return;
-        }
+        // Default: Corp Home (the "Discord landing" experience)
+        viewStack.clear({ type: 'corp-home' });
 
         setReady(true);
       } catch (err) {
@@ -192,7 +204,7 @@ function ResumeView({ corpPath }: { corpPath: string }) {
     'hierarchy': 'Enter:inspect  q:back',
     'agent-inspector': 'd:dm  q:back',
     'task-detail': 's:status  q:back',
-    'corp-home': 'c:chat  t:tasks  h:hierarchy',
+    'corp-home': 'Enter:open  d:ceo  t:tasks  h:hierarchy  c:palette',
   };
 
   const renderView = () => {
@@ -251,6 +263,16 @@ function ResumeView({ corpPath }: { corpPath: string }) {
             onBack={goBack}
           />
         );
+      case 'corp-home':
+        return (
+          <CorpHome
+            corpRoot={corpPath}
+            daemonClient={client}
+            initialMembers={members}
+            initialChannels={channels}
+            onNavigate={navigate}
+          />
+        );
       default:
         return <Text>Unknown view</Text>;
     }
@@ -261,7 +283,7 @@ function ResumeView({ corpPath }: { corpPath: string }) {
       {renderView()}
       {current.type !== 'chat' && (
         <StatusBar
-          breadcrumbs={viewStack.breadcrumbs()}
+          breadcrumbs={viewStack.breadcrumbs(new Map(channels.map((c) => [c.id, c.name])))}
           hints={hints[current.type] ?? ''}
         />
       )}
