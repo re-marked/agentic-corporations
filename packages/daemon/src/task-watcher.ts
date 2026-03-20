@@ -1,6 +1,18 @@
 import { watch, type FSWatcher, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { type TaskStatus, readTask } from '@claudecorp/shared';
+import {
+  type TaskStatus,
+  type Member,
+  type Channel,
+  type ChannelMessage,
+  readTask,
+  readConfig,
+  appendMessage,
+  generateId,
+  MEMBERS_JSON,
+  CHANNELS_JSON,
+  MESSAGES_JSONL,
+} from '@claudecorp/shared';
 import { writeTaskEvent } from './task-events.js';
 import type { Daemon } from './daemon.js';
 
@@ -94,6 +106,39 @@ export class TaskWatcher {
           this.daemon.corpRoot,
           `"${task.title}" → ${task.status}`,
         );
+
+        // When task completes or fails, notify the creator so they can report back
+        if (task.status === 'completed' || task.status === 'failed') {
+          try {
+            const members = readConfig<Member[]>(join(this.daemon.corpRoot, MEMBERS_JSON));
+            const creator = members.find(m => m.id === task.createdBy);
+            if (creator && creator.type === 'agent') {
+              const channels = readConfig<Channel[]>(join(this.daemon.corpRoot, CHANNELS_JSON));
+              const taskChannel = channels.find(c =>
+                c.name.includes('tasks') || c.name.includes('job-board') || c.name.includes('operations'),
+              );
+              if (taskChannel) {
+                const notifyMsg: ChannelMessage = {
+                  id: generateId(),
+                  channelId: taskChannel.id,
+                  senderId: 'system',
+                  threadId: null,
+                  content: `@${creator.displayName} Task "${task.title}" has been marked as ${task.status} by the assignee.`,
+                  kind: 'text',
+                  mentions: [creator.id],
+                  metadata: null,
+                  depth: 0,
+                  originId: '',
+                  timestamp: new Date().toISOString(),
+                };
+                notifyMsg.originId = notifyMsg.id;
+                appendMessage(join(this.daemon.corpRoot, taskChannel.path, MESSAGES_JSONL), notifyMsg);
+              }
+            }
+          } catch {
+            // Non-fatal — notification is best-effort
+          }
+        }
       }
 
       // Check for assignment change
