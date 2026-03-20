@@ -564,16 +564,7 @@ Always consider what happens when things go wrong.`,
       {/* Dynamic section — only this re-renders */}
       <Box flexDirection="row">
         <Box flexDirection="column" flexGrow={1} paddingX={1}>
-          {streamPreview && streamPreview.content && (
-            <Box flexDirection="column" marginBottom={1}>
-              <Box gap={1}>
-                <Text bold color={COLORS.agent}>{streamPreview.agentName}</Text>
-                <Spinner type="dots" />
-              </Box>
-              <Text wrap="wrap">{streamPreview.content}</Text>
-            </Box>
-          )}
-          {!streamPreview?.content && (thinking || dispatchingAgents.length > 0) && (
+          {(thinking || dispatchingAgents.length > 0 || streamPreview?.content) && (
             <Box gap={1}>
               <Text color={COLORS.primary}><Spinner type="dots" /></Text>
               <Text color={COLORS.subtle}>
