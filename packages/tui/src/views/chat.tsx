@@ -578,8 +578,9 @@ Always consider what happens when things go wrong.`,
     );
   };
 
-  // Is there an active stream whose content already landed in liveMessages?
-  const streamAlreadyLanded = streamPreview?.content && liveMessages.length > 0;
+  // Is the streaming agent's response already in liveMessages? (not just the user's message)
+  const streamingAgentId = streamPreview ? members.find((m) => m.displayName === streamPreview.agentName)?.id : null;
+  const streamAlreadyLanded = streamPreview?.content && streamingAgentId && liveMessages.some((m) => m.senderId === streamingAgentId);
 
   return (
     <Box flexDirection="column" flexGrow={1}>
