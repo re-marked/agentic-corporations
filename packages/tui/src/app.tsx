@@ -117,28 +117,31 @@ function ResumeView({ corpPath }: { corpPath: string }) {
   // Global key handler — Ctrl combos work in ALL views including chat
   useInput((input, key) => {
     if (!ready || showSwitcher) return;
+    const current = viewStack.current();
 
-    // Ctrl+K — command palette (always)
+    // Ctrl+K — command palette
     if (key.ctrl && input === 'k') {
       setShowSwitcher(true);
       return;
     }
-    // Ctrl+H — corp home (always)
+    // Ctrl+H — corp home (no-op if already there)
     if (key.ctrl && input === 'h') {
-      navigate({ type: 'corp-home' });
+      if (current?.type !== 'corp-home') navigate({ type: 'corp-home' });
       return;
     }
-    // Ctrl+T — task board (always)
+    // Ctrl+T — task board (no-op if already there)
     if (key.ctrl && input === 't') {
-      navigate({ type: 'task-board' });
+      if (current?.type !== 'task-board') navigate({ type: 'task-board' });
       return;
     }
-    // Ctrl+D — CEO DM (always)
+    // Ctrl+D — CEO DM (no-op if already in that channel)
     if (key.ctrl && input === 'd') {
-      if (ceoDmChannel) navigate({ type: 'chat', channelId: ceoDmChannel.id });
+      if (ceoDmChannel && !(current?.type === 'chat' && current.channelId === ceoDmChannel.id)) {
+        navigate({ type: 'chat', channelId: ceoDmChannel.id });
+      }
       return;
     }
-    // Escape — go back (always)
+    // Escape — go back
     if (key.escape) {
       if (viewStack.depth() > 1) goBack();
       return;
