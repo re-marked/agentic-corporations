@@ -530,41 +530,71 @@ Always consider what happens when things go wrong.`,
     );
   }
 
-  // Use Static for historical messages — they render once into the terminal
-  // scroll buffer and never re-render. Only the bottom (streaming/input) is dynamic.
+  // Split messages: historical go into Static (scroll buffer), recent stay dynamic.
+  // This prevents streaming preview from duplicating the final message.
+  const initialCountRef = useRef(messages.length);
+
+  // Bump the static boundary when no streaming is active and new messages arrived
+  useEffect(() => {
+    if (!streamPreview?.content && !thinking && messages.length > initialCountRef.current) {
+      initialCountRef.current = messages.length;
+    }
+  }, [messages.length, streamPreview, thinking]);
+
+  const historyMessages = messages.slice(0, initialCountRef.current);
+  const liveMessages = messages.slice(initialCountRef.current);
+
+  const renderMsg = (msg: ChannelMessage) => {
+    const sender = members.find((m) => m.id === msg.senderId);
+    const name = sender?.displayName ?? 'system';
+    const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const isSystem = msg.senderId === 'system' || msg.kind === 'system' || msg.kind === 'task_event';
+
+    if (isSystem) {
+      return (
+        <Box key={msg.id} flexDirection="column">
+          <Text color={COLORS.muted}> {'\u250A'} {name} {time}</Text>
+          <Text color={COLORS.muted}> {'\u250A'} {msg.content}</Text>
+        </Box>
+      );
+    }
+    return (
+      <Box key={msg.id} flexDirection="column" marginBottom={1}>
+        <Box gap={1}>
+          <Text bold color={sender?.type === 'user' ? COLORS.user : COLORS.agent}>{name}</Text>
+          <Text color={COLORS.subtle}>{time}</Text>
+        </Box>
+        <Text wrap="wrap">{msg.content}</Text>
+      </Box>
+    );
+  };
+
+  // Is there an active stream whose content already landed in liveMessages?
+  const streamAlreadyLanded = streamPreview?.content && liveMessages.length > 0;
+
   return (
     <Box flexDirection="column" flexGrow={1}>
-      <Static items={messages}>
-        {(msg) => {
-          const sender = members.find((m) => m.id === msg.senderId);
-          const name = sender?.displayName ?? 'system';
-          const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          const isSystem = msg.senderId === 'system' || msg.kind === 'system' || msg.kind === 'task_event';
-
-          if (isSystem) {
-            return (
-              <Box key={msg.id} flexDirection="column">
-                <Text color={COLORS.muted}> {'\u250A'} {name} {time}</Text>
-                <Text color={COLORS.muted}> {'\u250A'} {msg.content}</Text>
-              </Box>
-            );
-          }
-
-          return (
-            <Box key={msg.id} flexDirection="column" marginBottom={1}>
-              <Box gap={1}>
-                <Text bold color={sender?.type === 'user' ? COLORS.user : COLORS.agent}>{name}</Text>
-                <Text color={COLORS.subtle}>{time}</Text>
-              </Box>
-              <Text wrap="wrap">{msg.content}</Text>
-            </Box>
-          );
-        }}
+      {/* Historical messages — rendered once, scrollable */}
+      <Static items={historyMessages}>
+        {(msg) => renderMsg(msg)}
       </Static>
-      {/* Dynamic section — only this re-renders */}
+      {/* Dynamic section — live messages + streaming + input */}
       <Box flexDirection="row">
         <Box flexDirection="column" flexGrow={1} paddingX={1}>
-          {(thinking || dispatchingAgents.length > 0 || streamPreview?.content) && (
+          {/* Recent messages that arrived during this session */}
+          {liveMessages.map((msg) => renderMsg(msg))}
+          {/* Streaming preview — only when content hasn't landed in liveMessages yet */}
+          {streamPreview?.content && !streamAlreadyLanded && (
+            <Box flexDirection="column" marginBottom={1}>
+              <Box gap={1}>
+                <Text bold color={COLORS.agent}>{streamPreview.agentName}</Text>
+                <Spinner type="dots" />
+              </Box>
+              <Text wrap="wrap">{streamPreview.content}</Text>
+            </Box>
+          )}
+          {/* Typing indicator — when no streaming content yet */}
+          {!streamPreview?.content && (thinking || dispatchingAgents.length > 0) && (
             <Box gap={1}>
               <Text color={COLORS.primary}><Spinner type="dots" /></Text>
               <Text color={COLORS.subtle}>
