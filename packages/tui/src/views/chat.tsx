@@ -48,6 +48,11 @@ export function ChatView({ channel, members: initialMembers, messagesPath, daemo
   const [showMemberSidebar, setShowMemberSidebar] = useState(false);
   const lastMsgCount = useRef(messages.length);
 
+  // Update tab title with channel name
+  useEffect(() => {
+    process.stdout.write(`\x1b]0;Claude Corp \u25C6 #${channel.name}\x07`);
+  }, [channel.name]);
+
   // Refresh members when new messages arrive (new agents may have been hired)
   useEffect(() => {
     if (messages.length > lastMsgCount.current) {

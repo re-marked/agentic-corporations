@@ -163,6 +163,14 @@ export function CorpHome({ corpRoot, daemonClient, initialMembers, initialChanne
     return () => clearInterval(interval);
   }, [refresh]);
 
+  // Update tab title with live status
+  useEffect(() => {
+    const online = agents.filter((a) => a.processStatus === 'ready').length;
+    const name = corp?.displayName ?? 'Claude Corp';
+    const icon = online > 0 ? '\u25C6' : '\u25C7';
+    process.stdout.write(`\x1b]0;${name} ${icon} ${online} online\x07`);
+  }, [agents, corp]);
+
   useInput((_input, key) => {
     if (key.upArrow) {
       setCursor((i) => Math.max(0, i - 1));
