@@ -123,7 +123,10 @@ export class MessageRouter {
     this.offsets.set(msgPath, newOffset);
 
     for (const msg of messages) {
-      if (this.processedMsgIds.has(msg.id)) continue;
+      if (this.processedMsgIds.has(msg.id)) {
+        console.log(`[router] DEDUP skipped msg ${msg.id} (already processed)`);
+        continue;
+      }
       this.processedMsgIds.add(msg.id);
       this.processMessage(msg, channel);
     }
@@ -215,14 +218,13 @@ export class MessageRouter {
     members: Member[],
     sender: Member,
   ): Promise<void> {
-    // Dedup guard (only for agent-to-agent, not user messages)
-    if (sender.type === 'agent') {
-      const dedupKey = `${msg.originId}:${targetId}`;
-      if (this.dispatched.has(dedupKey)) {
-        return;
-      }
-      this.dispatched.add(dedupKey);
+    // Universal dedup: never dispatch the same message to the same target twice
+    const dispatchKey = `${msg.id}:${targetId}`;
+    if (this.dispatched.has(dispatchKey)) {
+      console.log(`[router] DEDUP blocked dispatch to ${targetId} for msg ${msg.id}`);
+      return;
     }
+    this.dispatched.add(dispatchKey);
 
     // Cooldown guard (only for agent-to-agent, user messages always go through)
     if (sender.type === 'agent') {
