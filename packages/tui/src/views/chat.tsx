@@ -534,10 +534,6 @@ Always consider what happens when things go wrong.`,
   // scroll buffer and never re-render. Only the bottom (streaming/input) is dynamic.
   return (
     <Box flexDirection="column" flexGrow={1}>
-      <Box borderStyle="round" borderColor={COLORS.border} paddingX={1}>
-        <Text bold color={COLORS.primary}># {channel.name}</Text>
-        {!showMemberSidebar && <Text color={COLORS.muted}>  C-M: members</Text>}
-      </Box>
       <Static items={messages}>
         {(msg) => {
           const sender = members.find((m) => m.id === msg.senderId);
@@ -604,6 +600,7 @@ Always consider what happens when things go wrong.`,
         disabled={sending}
         placeholder="Type a message... (/hire to add agents)"
       />
+      <Text color={COLORS.muted}> #{channel.name}  C-K:palette  C-H:home  C-T:tasks  C-M:members  Esc:back</Text>
     </Box>
   );
 }
