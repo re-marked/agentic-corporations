@@ -2,15 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { watch } from 'node:fs';
 import { type ChannelMessage, tailMessages, readMessages } from '@claudecorp/shared';
 
-/** Filter out messages not written by our system (external OpenClaw writes). */
+/** Only show messages written by our system. External OpenClaw writes are hidden. */
 function filterExternal(msgs: ChannelMessage[]): ChannelMessage[] {
   return msgs.filter((msg) => {
     if (msg.kind !== 'text') return true;                        // system/task events always show
     if (msg.senderId === 'system') return true;                   // system sender always show
     const meta = msg.metadata as Record<string, unknown> | null;
-    if (meta?.source === 'router' || meta?.source === 'user') return true;  // our writes
-    if (!meta) return true;                                       // legacy messages (before tagging)
-    return false;                                                 // external write — hide
+    return meta?.source === 'router' || meta?.source === 'user'; // only our tagged writes
   });
 }
 
