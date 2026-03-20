@@ -246,6 +246,7 @@ export async function dispatchToAgent(
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const url = `http://127.0.0.1:${agent.port}/v1/chat/completions`;
+      console.log(`[dispatch] >>> HTTP POST to ${agent.displayName} (attempt ${attempt + 1}, port ${agent.port}, model ${agent.model})`);
       const resp = await fetch(url, {
         method: 'POST',
         headers: {

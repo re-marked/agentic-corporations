@@ -139,7 +139,7 @@ export class Daemon {
       content,
       kind: 'text',
       mentions: [],
-      metadata: null,
+      metadata: { source: 'user' },
       depth: 0,
       originId: '',
       timestamp: new Date().toISOString(),

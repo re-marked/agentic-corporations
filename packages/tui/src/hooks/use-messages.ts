@@ -2,18 +2,15 @@ import { useState, useEffect, useRef } from 'react';
 import { watch } from 'node:fs';
 import { type ChannelMessage, tailMessages, readMessages } from '@claudecorp/shared';
 
-/** Filter out agent messages not written by the router (external OpenClaw writes). */
+/** Filter out messages not written by our system (external OpenClaw writes). */
 function filterExternal(msgs: ChannelMessage[]): ChannelMessage[] {
   return msgs.filter((msg) => {
-    if (msg.kind !== 'text') return true;                  // system/task events always show
-    if (msg.senderId === 'system') return true;             // system messages always show
+    if (msg.kind !== 'text') return true;                        // system/task events always show
+    if (msg.senderId === 'system') return true;                   // system sender always show
     const meta = msg.metadata as Record<string, unknown> | null;
-    if (meta?.source === 'router') return true;             // our router wrote it
-    // User messages (no metadata) are fine — only agents have metadata.source
-    // If no metadata at all, it's a user message or legacy message — show it
-    if (!meta) return true;
-    // Agent message without source: 'router' — external write, hide it
-    return false;
+    if (meta?.source === 'router' || meta?.source === 'user') return true;  // our writes
+    if (!meta) return true;                                       // legacy messages (before tagging)
+    return false;                                                 // external write — hide
   });
 }
 
