@@ -46,7 +46,6 @@ export class MessageRouter {
     if (existsSync(channelsDir)) {
       this.channelsDirWatcher = watch(channelsDir, (event, filename) => {
         if (event === 'rename' && filename) {
-          // New channel directory may have appeared
           const msgPath = join(channelsDir, filename, MESSAGES_JSONL);
           if (existsSync(msgPath) && !this.watchers.has(filename)) {
             const freshChannels = this.loadChannels();
@@ -54,6 +53,9 @@ export class MessageRouter {
             if (ch) this.watchChannel(ch);
           }
         }
+      });
+      this.channelsDirWatcher.on('error', () => {
+        // Non-fatal — new channels won't auto-watch until restart
       });
     }
 
@@ -98,6 +100,11 @@ export class MessageRouter {
 
     const watcher = watch(msgPath, () => {
       this.onFileChange(channel, msgPath);
+    });
+    watcher.on('error', () => {
+      // Windows EPERM on external file modification — re-watch
+      this.watchers.delete(channel.id);
+      setTimeout(() => this.watchChannel(channel), 1000);
     });
 
     this.watchers.set(channel.id, watcher);

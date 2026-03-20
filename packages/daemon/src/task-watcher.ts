@@ -27,6 +27,11 @@ export class TaskWatcher {
       const filePath = join(tasksDir, filename);
       this.onTaskFileChange(filePath);
     });
+    this.watcher.on('error', () => {
+      // Windows EPERM — try to re-watch after a delay
+      this.watcher = null;
+      setTimeout(() => this.start(), 2000);
+    });
 
     console.log(`[task-watcher] Watching tasks/ (${this.taskCache.size} tasks cached)`);
   }
