@@ -159,39 +159,21 @@ export function ChatView({ channel, members: initialMembers, messagesPath, daemo
     const cmd = text.trim().toLowerCase();
     if (cmd === '/who' || cmd === '/m' || cmd === '/members') {
       try {
-        // Get live agent statuses from daemon API
         const agents = await daemonClient.listAgents();
-        const agentStatusMap = new Map<string, string>();
-        for (const agent of agents) {
-          agentStatusMap.set(agent.memberId, agent.status);
-        }
+        const statusMap = new Map(agents.map((a) => [a.memberId, a.status]));
+        const online = members.filter((m) => m.type === 'user' || statusMap.get(m.id) === 'ready');
+        const offline = members.filter((m) => m.type === 'agent' && statusMap.get(m.id) !== 'ready');
 
-        // Build member roster
-        const lines: string[] = ['--- Members Online ---'];
-        for (const member of members) {
-          let statusIcon = '◇'; // offline by default
-          let statusColor = 'muted';
-          
-          if (member.type === 'user') {
-            statusIcon = '◆';
-            statusColor = 'success';
-          } else if (member.type === 'agent') {
-            const agentStatus = agentStatusMap.get(member.id);
-            if (agentStatus === 'ready') {
-              statusIcon = '◆'; // online
-              statusColor = 'success';
-            } else {
-              statusIcon = '◇'; // offline
-              statusColor = 'muted';
-            }
+        const lines: string[] = [`━━━ Roster (${online.length} online) ━━━`];
+        for (const m of online) {
+          lines.push(`  ◆ ${m.displayName.padEnd(16)} ${m.rank.padEnd(8)} ${m.type === 'user' ? 'founder' : 'online'}`);
+        }
+        if (offline.length > 0) {
+          lines.push('');
+          for (const m of offline) {
+            lines.push(`  ◇ ${m.displayName.padEnd(16)} ${m.rank.padEnd(8)} offline`);
           }
-
-          const statusText = member.type === 'user' ? 'user' :
-                           agentStatusMap.get(member.id) === 'ready' ? 'online' : 'offline';
-          
-          lines.push(`${statusIcon} ${member.displayName} (${member.rank}) - ${statusText}`);
         }
-        
         writeSystemMessage(lines.join('\n'));
       } catch (err) {
         writeSystemMessage(`Failed to fetch member status: ${err instanceof Error ? err.message : String(err)}`);
@@ -211,6 +193,22 @@ export function ChatView({ channel, members: initialMembers, messagesPath, daemo
         } else {
           writeSystemMessage('No daemon logs found.');
         }
+      } catch {}
+      return;
+    }
+
+    // /channels — list all channels
+    if (cmd === '/channels' || cmd === '/ch') {
+      try {
+        const { readConfig: rc, CHANNELS_JSON: CJ } = await import('@claudecorp/shared');
+        const { join: j } = await import('node:path');
+        const allCh = rc<{ name: string; kind: string; scope: string }[]>(j(corpRoot, CJ));
+        const lines = ['━━━ Channels ━━━'];
+        for (const c of allCh) {
+          const icon = c.kind === 'direct' ? '◆' : '#';
+          lines.push(`  ${icon} ${c.name.padEnd(24)} ${c.kind.padEnd(10)} ${c.scope}`);
+        }
+        writeSystemMessage(lines.join('\n'));
       } catch {}
       return;
     }
