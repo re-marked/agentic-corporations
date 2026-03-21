@@ -369,10 +369,6 @@ function ResumeView({ corpPath }: { corpPath: string }) {
       case 'corp-home':
         return (
           <CorpHome
-            corpRoot={corpPath}
-            daemonClient={client}
-            initialMembers={members}
-            initialChannels={channels}
             onNavigate={navigate}
           />
         );
