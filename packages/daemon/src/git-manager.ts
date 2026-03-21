@@ -1,4 +1,5 @@
 import { corpGit, type CorpGit } from '@claudecorp/shared';
+import { log, logError } from './logger.js';
 
 const DEBOUNCE_MS = 10_000; // Wait 10s of quiet before committing
 const JANITOR_INTERVAL_MS = 60_000; // Safety net: check every 60s
@@ -61,7 +62,7 @@ export class GitManager {
       const message = `${author}: ${summary}`;
 
       await this.git.commitAll(message);
-      console.log(`[git] ${message} (${changedFiles.length} files)`);
+      log(`[git] ${message} (${changedFiles.length} files)`);
 
       this.pendingAuthor = null;
     } catch (err) {
@@ -69,7 +70,7 @@ export class GitManager {
       const msg = err instanceof Error ? err.message : String(err);
       // "nothing to commit" is expected, don't log it
       if (!msg.includes('nothing to commit')) {
-        console.error(`[git] Commit failed: ${msg}`);
+        logError(`[git] Commit failed: ${msg}`);
       }
     } finally {
       this.committing = false;

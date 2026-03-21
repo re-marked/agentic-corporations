@@ -9,7 +9,7 @@ import {
   MEMBERS_JSON,
   CHANNELS_JSON,
 } from '@claudecorp/shared';
-import { Daemon } from '@claudecorp/daemon';
+import { Daemon, setSilentMode } from '@claudecorp/daemon';
 import { join } from 'node:path';
 import { ViewStack, type View } from './navigation.js';
 import { OnboardingView } from './views/onboarding.js';
@@ -163,6 +163,7 @@ function ResumeView({ corpPath }: { corpPath: string }) {
 
     (async () => {
       try {
+        setSilentMode(true); // Logs go to file only, not stdout (garbles TUI)
         const globalConfig = ensureGlobalConfig();
         d = new Daemon(corpPath, globalConfig);
         const port = await d.start();
