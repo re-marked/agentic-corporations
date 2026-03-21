@@ -21,7 +21,7 @@ import { COLORS, BORDER_STYLE } from '../theme.js';
 import { TaskWizard } from './task-wizard.js';
 import { ProjectWizard } from './project-wizard.js';
 import { TeamWizard } from './team-wizard.js';
-import type { DaemonClient } from '../lib/daemon-client.js';
+import { useCorp } from '../context/corp-context.js';
 
 const THINKING_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes — agents can work long
 
@@ -33,24 +33,21 @@ interface StreamData {
 
 interface Props {
   channel: Channel;
-  members: Member[];
   messagesPath: string;
-  daemonClient: DaemonClient;
-  corpRoot: string;
   /** Streaming state from WebSocket events */
   streamData?: StreamData | null;
   /** Agent names currently dispatching */
   dispatchingAgents?: string[];
-  onSwitchChannel?: () => void;
   onNavigate?: (view: import('../navigation.js').View) => void;
 }
 
-export function ChatView({ channel, members: initialMembers, messagesPath, daemonClient, corpRoot, streamData, dispatchingAgents = [], onSwitchChannel, onNavigate }: Props) {
+export function ChatView({ channel, messagesPath, streamData, dispatchingAgents = [], onNavigate }: Props) {
+  const { corpRoot, daemonClient, members: ctxMembers } = useCorp();
   const messages = useMessages(messagesPath);
   const [sending, setSending] = useState(false);
   const [thinking, setThinking] = useState(false);
   const [thinkingAgents, setThinkingAgents] = useState<string[]>([]);
-  const [members, setMembers] = useState(initialMembers);
+  const [members, setMembers] = useState(ctxMembers);
   const [showHireWizard, setShowHireWizard] = useState(false);
   const [showTaskWizard, setShowTaskWizard] = useState(false);
   const [showProjectWizard, setShowProjectWizard] = useState(false);

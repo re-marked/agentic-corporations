@@ -263,9 +263,6 @@ function ResumeView({ corpPath }: { corpPath: string }) {
       >
         <Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1} height="100%">
           <CommandPalette
-            channels={channels}
-            members={members}
-            corpRoot={corpPath}
             lastVisited={lastVisitedRef.current}
             onNavigate={(view) => {
               navigate(view);
@@ -317,13 +314,9 @@ function ResumeView({ corpPath }: { corpPath: string }) {
         return (
           <ChatView
             channel={ch}
-            members={members}
             messagesPath={messagesPath}
-            daemonClient={client}
-            corpRoot={corpPath}
             streamData={streamForChannel}
             dispatchingAgents={[...events.dispatching]}
-            onSwitchChannel={() => setShowSwitcher(true)}
             onNavigate={navigate}
           />
         );
@@ -331,9 +324,6 @@ function ResumeView({ corpPath }: { corpPath: string }) {
       case 'task-board':
         return (
           <TaskBoard
-            corpRoot={corpPath}
-            members={members}
-            daemonClient={client}
             onNavigate={navigate}
             onBack={goBack}
           />
@@ -341,7 +331,6 @@ function ResumeView({ corpPath }: { corpPath: string }) {
       case 'hierarchy':
         return (
           <HierarchyView
-            corpRoot={corpPath}
             onNavigate={navigate}
             onBack={goBack}
           />
@@ -349,19 +338,14 @@ function ResumeView({ corpPath }: { corpPath: string }) {
       case 'task-detail':
         return (
           <TaskDetail
-            corpRoot={corpPath}
             taskId={current.taskId}
-            members={members}
             onBack={goBack}
           />
         );
       case 'agent-inspector':
         return (
           <AgentInspector
-            corpRoot={corpPath}
             memberId={current.memberId}
-            members={members}
-            channels={channels}
             onNavigate={navigate}
             onBack={goBack}
           />
