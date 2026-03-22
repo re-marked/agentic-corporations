@@ -253,6 +253,38 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
       return;
     }
 
+    // /version — show package versions
+    if (text.trim().toLowerCase() === '/version') {
+      try {
+        const fs = await import('node:fs');
+        const path = await import('node:path');
+        
+        // Read package.json files
+        const sharedPkg = JSON.parse(fs.readFileSync(path.join(corpRoot, 'packages/shared/package.json'), 'utf8'));
+        const daemonPkg = JSON.parse(fs.readFileSync(path.join(corpRoot, 'packages/daemon/package.json'), 'utf8'));
+        const tuiPkg = JSON.parse(fs.readFileSync(path.join(corpRoot, 'packages/tui/package.json'), 'utf8'));
+        const clipPkg = JSON.parse(fs.readFileSync(path.join(corpRoot, 'packages/cli/package.json'), 'utf8'));
+        
+        const lines = [
+          '━━━ Version Information ━━━',
+          '',
+          '📦 Package Versions:',
+          `   @claudecorp/shared: ${sharedPkg.version}`,
+          `   @claudecorp/daemon: ${daemonPkg.version}`,
+          `   @claudecorp/tui:    ${tuiPkg.version}`,
+          `   @claudecorp/cli:    ${clipPkg.version}`,
+          '',
+          '⚙️ Runtime:',
+          `   Node.js: ${process.version}`,
+        ];
+        
+        writeSystemMessage(lines.join('\n'));
+      } catch (error) {
+        writeSystemMessage(`Error reading version info: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+      return;
+    }
+
     // /who, /m, /members — show member roster with status
     const cmd = text.trim().toLowerCase();
     if (cmd === '/who' || cmd === '/m' || cmd === '/members') {
