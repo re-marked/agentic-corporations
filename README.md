@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/claude-corp-banner.png" alt="Claude Corp" width="100%" />
+  <img src="./banner.png" alt="Claude Corp — Crabs Foundry's End" width="100%" />
 </p>
 
 <h1 align="center">🏭 Claude Corp</h1>
