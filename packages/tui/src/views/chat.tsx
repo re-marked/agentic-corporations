@@ -164,6 +164,127 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
       return;
     }
 
+    // /help shows available commands
+    if (text.trim().toLowerCase() === '/help') {
+      const helpText = [
+        '━━━ Available Commands ━━━',
+        '',
+        '📍 Navigation:',
+        '  /h, /hierarchy     View corp hierarchy',
+        '  /t, /tasks         View task board',
+        '  /a, /agents        View agents (alias for hierarchy)',
+        '  /home              Go to corp home',
+        '  /channels, /ch     List all channels',
+        '',
+        '📊 Info:',
+        '  /who, /m, /members Show member roster with online/offline status',
+        '  /stats             Show comprehensive corp statistics',
+        '  /ping              Test command (responds with pong!)',
+        '  /uptime            Show daemon uptime and message count',
+        '  /logs              Show recent daemon logs',
+        '',
+        '⚙️ Management:',
+        '  /hire              Open agent hiring wizard',
+        '  /task              Open task creation wizard',
+        '  /project           Open project creation wizard',
+        '  /team              Open team creation wizard',
+        '  /dogfood           Set up development project',
+        '  /help              Show this help message',
+      ];
+      writeSystemMessage(helpText.join('\n'));
+      return;
+    }
+
+    // /stats — show comprehensive corp statistics
+    if (text.trim().toLowerCase() === '/stats') {
+      try {
+        // Get agents and their status
+        const agents = await daemonClient.listAgents();
+        const statusMap = new Map(agents.map((a) => [a.memberId, a.status]));
+        const online = members.filter((m) => m.type === 'user' || statusMap.get(m.id) === 'ready');
+        const offline = members.filter((m) => m.type === 'agent' && statusMap.get(m.id) !== 'ready');
+
+        // Get tasks by status
+        const tasks = await daemonClient.listTasks();
+        const taskStats = {
+          pending: tasks.filter(t => t.status === 'pending').length,
+          in_progress: tasks.filter(t => t.status === 'in_progress').length,
+          completed: tasks.filter(t => t.status === 'completed').length,
+          failed: tasks.filter(t => t.status === 'failed').length,
+          blocked: tasks.filter(t => t.status === 'blocked').length,
+        };
+
+        // Get channels count
+        const { readConfig: rc, CHANNELS_JSON: CJ } = await import('@claudecorp/shared');
+        const { join: j } = await import('node:path');
+        const allChannels = rc<{ name: string; kind: string; scope: string }[]>(j(corpRoot, CJ));
+        
+        // Get uptime and message count
+        const { uptime, totalMessages } = await daemonClient.getUptime();
+
+        const lines: string[] = [
+          '━━━ Corp Statistics ━━━',
+          '',
+          '👥 Agents:',
+          `   Online:  ${online.length}`,
+          `   Offline: ${offline.length}`,
+          `   Total:   ${members.length}`,
+          '',
+          '📋 Tasks:',
+          `   Pending:     ${taskStats.pending}`,
+          `   In Progress: ${taskStats.in_progress}`,
+          `   Completed:   ${taskStats.completed}`,
+          `   Failed:      ${taskStats.failed}`,
+          `   Blocked:     ${taskStats.blocked}`,
+          `   Total:       ${tasks.length}`,
+          '',
+          '💬 Channels:',
+          `   Total: ${allChannels.length}`,
+          '',
+          '📊 Activity:',
+          `   Messages: ${(totalMessages ?? 0).toLocaleString()}`,
+          `   Uptime:   ${uptime}`,
+        ];
+
+        writeSystemMessage(lines.join('\n'));
+      } catch (err) {
+        writeSystemMessage(`Failed to fetch corp statistics: ${err instanceof Error ? err.message : String(err)}`);
+      }
+      return;
+    }
+
+    // /version — show package versions
+    if (text.trim().toLowerCase() === '/version') {
+      try {
+        const fs = await import('node:fs');
+        const path = await import('node:path');
+        
+        // Read package.json files
+        const sharedPkg = JSON.parse(fs.readFileSync(path.join(corpRoot, 'packages/shared/package.json'), 'utf8'));
+        const daemonPkg = JSON.parse(fs.readFileSync(path.join(corpRoot, 'packages/daemon/package.json'), 'utf8'));
+        const tuiPkg = JSON.parse(fs.readFileSync(path.join(corpRoot, 'packages/tui/package.json'), 'utf8'));
+        const clipPkg = JSON.parse(fs.readFileSync(path.join(corpRoot, 'packages/cli/package.json'), 'utf8'));
+        
+        const lines = [
+          '━━━ Version Information ━━━',
+          '',
+          '📦 Package Versions:',
+          `   @claudecorp/shared: ${sharedPkg.version}`,
+          `   @claudecorp/daemon: ${daemonPkg.version}`,
+          `   @claudecorp/tui:    ${tuiPkg.version}`,
+          `   @claudecorp/cli:    ${clipPkg.version}`,
+          '',
+          '⚙️ Runtime:',
+          `   Node.js: ${process.version}`,
+        ];
+        
+        writeSystemMessage(lines.join('\n'));
+      } catch (error) {
+        writeSystemMessage(`Error reading version info: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+      return;
+    }
+
     // /who, /m, /members — show member roster with status
     const cmd = text.trim().toLowerCase();
     if (cmd === '/who' || cmd === '/m' || cmd === '/members') {
