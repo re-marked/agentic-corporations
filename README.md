@@ -217,4 +217,4 @@ MIT
 
 ---
 
-Built by [Mark](https://x.com/re_marked) + [Claude](https://claude.ai) + AI agents that wrote their own features.
+Built by [Mark](https://x.com/real-markable) + [Claude](https://claude.ai) + AI agents that wrote their own features.
