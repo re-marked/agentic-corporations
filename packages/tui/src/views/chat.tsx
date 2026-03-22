@@ -178,6 +178,7 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
         '',
         '📊 Info:',
         '  /who, /m, /members Show member roster with online/offline status',
+        '  /stats             Show comprehensive corp statistics',
         '  /ping              Test command (responds with pong!)',
         '  /uptime            Show daemon uptime and message count',
         '  /logs              Show recent daemon logs',
@@ -191,6 +192,64 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
         '  /help              Show this help message',
       ];
       writeSystemMessage(helpText.join('\n'));
+      return;
+    }
+
+    // /stats — show comprehensive corp statistics
+    if (text.trim().toLowerCase() === '/stats') {
+      try {
+        // Get agents and their status
+        const agents = await daemonClient.listAgents();
+        const statusMap = new Map(agents.map((a) => [a.memberId, a.status]));
+        const online = members.filter((m) => m.type === 'user' || statusMap.get(m.id) === 'ready');
+        const offline = members.filter((m) => m.type === 'agent' && statusMap.get(m.id) !== 'ready');
+
+        // Get tasks by status
+        const tasks = await daemonClient.listTasks();
+        const taskStats = {
+          pending: tasks.filter(t => t.status === 'pending').length,
+          in_progress: tasks.filter(t => t.status === 'in_progress').length,
+          completed: tasks.filter(t => t.status === 'completed').length,
+          failed: tasks.filter(t => t.status === 'failed').length,
+          blocked: tasks.filter(t => t.status === 'blocked').length,
+        };
+
+        // Get channels count
+        const { readConfig: rc, CHANNELS_JSON: CJ } = await import('@claudecorp/shared');
+        const { join: j } = await import('node:path');
+        const allChannels = rc<{ name: string; kind: string; scope: string }[]>(j(corpRoot, CJ));
+        
+        // Get uptime and message count
+        const { uptime, totalMessages } = await daemonClient.getUptime();
+
+        const lines: string[] = [
+          '━━━ Corp Statistics ━━━',
+          '',
+          '👥 Agents:',
+          `   Online:  ${online.length}`,
+          `   Offline: ${offline.length}`,
+          `   Total:   ${members.length}`,
+          '',
+          '📋 Tasks:',
+          `   Pending:     ${taskStats.pending}`,
+          `   In Progress: ${taskStats.in_progress}`,
+          `   Completed:   ${taskStats.completed}`,
+          `   Failed:      ${taskStats.failed}`,
+          `   Blocked:     ${taskStats.blocked}`,
+          `   Total:       ${tasks.length}`,
+          '',
+          '💬 Channels:',
+          `   Total: ${allChannels.length}`,
+          '',
+          '📊 Activity:',
+          `   Messages: ${(totalMessages ?? 0).toLocaleString()}`,
+          `   Uptime:   ${uptime}`,
+        ];
+
+        writeSystemMessage(lines.join('\n'));
+      } catch (err) {
+        writeSystemMessage(`Failed to fetch corp statistics: ${err instanceof Error ? err.message : String(err)}`);
+      }
       return;
     }
 
