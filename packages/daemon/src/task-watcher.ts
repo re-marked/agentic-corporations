@@ -13,7 +13,7 @@ import {
   CHANNELS_JSON,
   MESSAGES_JSONL,
 } from '@claudecorp/shared';
-import { writeTaskEvent } from './task-events.js';
+import { writeTaskEvent, notifyTaskAssignment } from './task-events.js';
 import type { Daemon } from './daemon.js';
 import { log } from './logger.js';
 
@@ -91,13 +91,19 @@ export class TaskWatcher {
       const cached = this.taskCache.get(filePath);
 
       if (!cached) {
-        // New task file — but skip if API already posted the event
+        // New task file
         this.taskCache.set(filePath, { status: task.status, assignedTo: task.assignedTo });
         if (this.recentApiCreates.has(filePath)) {
+          // API already posted the event + @mention — skip
           this.recentApiCreates.delete(filePath);
           return;
         }
+        // Agent-created task (written directly to tasks/) — post event AND @mention
         writeTaskEvent(this.daemon.corpRoot, `"${task.title}" created (priority: ${task.priority})`);
+        if (task.assignedTo) {
+          notifyTaskAssignment(this.daemon.corpRoot, task.assignedTo, task.title);
+        }
+        this.daemon.heartbeat.refreshAll();
         return;
       }
 
