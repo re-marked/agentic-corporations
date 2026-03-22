@@ -108,7 +108,7 @@ export class TaskWatcher {
           `"${task.title}" → ${task.status}`,
         );
 
-        // When task completes or fails, notify the CEO so they can report to the founder
+        // When task completes or fails, notify the CEO in #tasks
         if (task.status === 'completed' || task.status === 'failed') {
           try {
             const members = readConfig<Member[]>(join(this.daemon.corpRoot, MEMBERS_JSON));
@@ -126,7 +126,7 @@ export class TaskWatcher {
                   channelId: taskChannel.id,
                   senderId: 'system',
                   threadId: null,
-                  content: `@${ceo.displayName} Task "${task.title}" has been marked as ${task.status} by ${assigneeName}. Report this to the Founder.`,
+                  content: `@${ceo.displayName} Task "${task.title}" has been marked as ${task.status} by ${assigneeName}. Go to your DM with the Founder and report what was done.`,
                   kind: 'text',
                   mentions: [ceo.id],
                   metadata: null,
