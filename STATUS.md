@@ -247,8 +247,8 @@ Cross items off as they ship. Reference: `docs/` for full vision specs.
 - [ ] /standup — trigger all agents to report status
 - [ ] Morning CEO briefings
 - [ ] Web frontend (connects to same daemon)
-- [ ] Auto-resume blocked tasks when dependency is resolved (system-level, not manual)
-- [ ] Multi-step task pipelines (task B auto-starts when task A completes)
+- [x] ~~Auto-resume blocked tasks~~ — v0.3.1 sibling notification handles this
+- [x] ~~Multi-step task pipelines~~ — DECIDED: CEO coordinates workflow, not a rigid pipeline engine. v0.3.1 auto-notifies siblings on completion. CEO adapts mid-project. Verified working in 5-agent research test + content-corp launch post pipeline.
 - [x] Agent memory (MEMORY.md + BRAIN/ knowledge graph framework — exists, agents can use it)
 
 ---
