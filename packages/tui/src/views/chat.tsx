@@ -22,6 +22,7 @@ import { TaskWizard } from './task-wizard.js';
 import { ProjectWizard } from './project-wizard.js';
 import { TeamWizard } from './team-wizard.js';
 import { useCorp } from '../context/corp-context.js';
+import { DialogueRenderer } from '../components/dialogue-renderer.js';
 
 const THINKING_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes — agents can work long
 
@@ -53,6 +54,7 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
   const [showProjectWizard, setShowProjectWizard] = useState(false);
   const [showTeamWizard, setShowTeamWizard] = useState(false);
   const [showMemberSidebar, setShowMemberSidebar] = useState(false);
+  const [dialogueMode, setDialogueMode] = useState(false);
   const lastMsgCount = useRef(messages.length);
 
   // Update tab title with channel name
@@ -96,10 +98,20 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
     return () => clearTimeout(timer);
   }, [thinking]);
 
+  // Detect DM channel — find the other agent
+  const isDm = channel.kind === 'direct';
+  const dmAgent = isDm
+    ? members.find((m) => channel.memberIds.includes(m.id) && m.type === 'agent')
+    : null;
+
   useInput((input, key) => {
     if (showHireWizard) return;
     if (key.ctrl && input === 'm') {
       setShowMemberSidebar(prev => !prev);
+    }
+    // Ctrl+R — toggle RPG dialogue mode (DMs only)
+    if (key.ctrl && input === 'r' && isDm && dmAgent) {
+      setDialogueMode(prev => !prev);
     }
   });
 
@@ -179,6 +191,8 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
         '📊 Info:',
         '  /who, /m, /members Show member roster with online/offline status',
         '  /stats             Show comprehensive corp statistics',
+        '  /version           Show package versions and runtime info',
+        '  /weather           Show current weather for London',
         '  /ping              Test command (responds with pong!)',
         '  /uptime            Show daemon uptime and message count',
         '  /logs              Show recent daemon logs',
@@ -281,6 +295,43 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
         writeSystemMessage(lines.join('\n'));
       } catch (error) {
         writeSystemMessage(`Error reading version info: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+      return;
+    }
+
+    // /weather — fetch current weather data
+    if (text.trim().toLowerCase() === '/weather') {
+      try {
+        const fs = await import('node:fs');
+        const path = await import('node:path');
+        
+        // Read API configuration
+        const configPath = path.join(corpRoot, 'weather-config.json');
+        const configData = fs.readFileSync(configPath, 'utf8');
+        const config = JSON.parse(configData);
+        const apiKey = config.apiKey;
+        
+        // Fetch weather from OpenWeatherMap API
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=London,UK&appid=${apiKey}&units=metric`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          throw new Error(`Weather API error: ${response.status} ${response.statusText}`);
+        }
+        
+        const weatherData = await response.json();
+        
+        const lines = [
+          '━━━ Weather: London ━━━',
+          '',
+          `🌡️ Temperature: ${Math.round(weatherData.main.temp)}°C`,
+          `🌤️ Conditions: ${weatherData.weather[0].description}`,
+          `💧 Humidity: ${weatherData.main.humidity}%`,
+        ];
+        
+        writeSystemMessage(lines.join('\n'));
+      } catch (err) {
+        writeSystemMessage(`Failed to fetch weather: ${err instanceof Error ? err.message : String(err)}`);
       }
       return;
     }
@@ -654,6 +705,29 @@ Always consider what happens when things go wrong.`,
     );
   };
 
+  // RPG dialogue mode — portrait + speech bubble for DM channels
+  if (dialogueMode && isDm && dmAgent) {
+    return (
+      <Box flexDirection="column" flexGrow={1}>
+        <DialogueRenderer
+          agent={dmAgent}
+          messages={messages}
+          members={members}
+          streamData={channelStream}
+          thinking={thinking}
+          thinkingAgents={thinkingAgents}
+          dispatchingAgents={[...dispatchingAgents]}
+        />
+        <MessageInput
+          onSend={handleSend}
+          disabled={sending}
+          placeholder={`Say something to ${dmAgent.displayName}...`}
+        />
+        <Text color={COLORS.muted}> #{channel.name}  C-R:chat mode  C-K:palette  C-H:home  Esc:back</Text>
+      </Box>
+    );
+  }
+
   return (
     <Box flexDirection="column" flexGrow={1}>
       {/* All messages in Static — terminal scroll buffer, never re-renders */}
@@ -687,7 +761,7 @@ Always consider what happens when things go wrong.`,
         disabled={sending}
         placeholder="Type a message... (/hire to add agents)"
       />
-      <Text color={COLORS.muted}> #{channel.name}  C-K:palette  C-H:home  C-T:tasks  C-M:members  Esc:back</Text>
+      <Text color={COLORS.muted}> #{channel.name}  {isDm ? 'C-R:RPG mode  ' : ''}C-K:palette  C-H:home  C-T:tasks  C-M:members  Esc:back</Text>
     </Box>
   );
 }
