@@ -115,10 +115,14 @@ function renderInputText(text: string, cursorPos: number, hueOffset: number, sho
   return <>{parts}</>;
 }
 
+let pasteCounter = 0;
+
 export function MessageInput({ onSend, disabled, placeholder }: Props) {
   const [value, setValue] = useState('');
   const [cursor, setCursor] = useState(0);
   const [hueOffset, setHueOffset] = useState(0);
+  /** Stores the full pasted content while the input shows a placeholder. */
+  const [pastedContent, setPastedContent] = useState<{ id: number; content: string } | null>(null);
 
   const hasMentions = /@\S/.test(value);
 
@@ -136,12 +140,27 @@ export function MessageInput({ onSend, disabled, placeholder }: Props) {
     if (key.tab || input === '\t') return;
 
     if (key.return) {
+      // If we have pasted content, send the full paste (not the placeholder)
+      if (pastedContent) {
+        onSend(pastedContent.content);
+        setPastedContent(null);
+        setValue('');
+        setCursor(0);
+        return;
+      }
       const trimmed = value.trim();
       if (trimmed) {
         onSend(trimmed);
         setValue('');
         setCursor(0);
       }
+      return;
+    }
+    // Backspace clears paste placeholder
+    if ((key.backspace || key.delete) && pastedContent) {
+      setPastedContent(null);
+      setValue('');
+      setCursor(0);
       return;
     }
     if (key.backspace || key.delete) {
@@ -163,6 +182,17 @@ export function MessageInput({ onSend, disabled, placeholder }: Props) {
     if (key.ctrl || key.meta || key.upArrow || key.downArrow || key.escape) return;
 
     if (input) {
+      // Detect multiline paste (contains newlines or is very long)
+      if (input.includes('\n') || input.includes('\r') || input.length > 200) {
+        const clean = input.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+        const lineCount = clean.split('\n').length;
+        const id = ++pasteCounter;
+        setPastedContent({ id, content: clean });
+        const preview = clean.split('\n')[0]!.substring(0, 40);
+        setValue(`[pasted ${lineCount} lines] ${preview}...`);
+        setCursor(0);
+        return;
+      }
       setValue((v) => v.slice(0, cursor) + input + v.slice(cursor));
       setCursor((c) => c + input.length);
     }
