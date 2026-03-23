@@ -124,6 +124,7 @@ export class Daemon {
   async sendMessage(
     channelId: string,
     content: string,
+    senderId?: string,
   ): Promise<{ message: ChannelMessage; dispatching: boolean; dispatchTargets: string[] }> {
     const channels = readConfig<Channel[]>(join(this.corpRoot, CHANNELS_JSON));
     const channel = channels.find((c) => c.id === channelId);
@@ -133,18 +134,24 @@ export class Daemon {
     const founder = members.find((m) => m.rank === 'owner');
     if (!founder) throw new Error('No founder found');
 
+    // Use provided senderId (for agents sending as themselves) or default to Founder
+    const actualSender = senderId
+      ? members.find((m) => m.id === senderId) ?? founder
+      : founder;
+    const isAgent = actualSender.type === 'agent';
+
     const messagesPath = join(this.corpRoot, channel.path, 'messages.jsonl');
 
-    // Write user message
+    // Write message
     const userMsg: ChannelMessage = {
       id: generateId(),
       channelId,
-      senderId: founder.id,
+      senderId: actualSender.id,
       threadId: null,
       content,
       kind: 'text',
       mentions: [],
-      metadata: { source: 'user' },
+      metadata: { source: isAgent ? 'router' : 'user' },
       depth: 0,
       originId: '',
       timestamp: new Date().toISOString(),

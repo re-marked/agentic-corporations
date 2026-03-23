@@ -247,12 +247,12 @@ export function createApi(daemon: Daemon): Server {
       // POST /messages/send
       if (method === 'POST' && path === '/messages/send') {
         const body = await readBody(req);
-        const { channelId, content } = body as { channelId: string; content: string };
+        const { channelId, content, senderId } = body as { channelId: string; content: string; senderId?: string };
         if (!channelId || !content) {
           json(res, { error: 'channelId and content required' }, 400);
           return;
         }
-        const result = await daemon.sendMessage(channelId, content);
+        const result = await daemon.sendMessage(channelId, content, senderId);
         json(res, result);
         return;
       }
