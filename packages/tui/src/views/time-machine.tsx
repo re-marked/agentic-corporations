@@ -99,7 +99,7 @@ export function TimeMachine({ onBack }: Props) {
       setStatus('Traveling...');
       daemonClient.rewindTo(hash).then(({ result }) => {
         setHeadIdx(cursor);
-        setStatus(cursor < headIdx ? '\u23EA Went back in time' : '\u23E9 Went forward in time');
+        setStatus(cursor > headIdx ? '\u23EA Rewound' : '\u23E9 Fast-forwarded');
       }).catch(() => {
         setStatus('Travel failed');
       });
