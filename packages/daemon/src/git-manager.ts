@@ -55,7 +55,13 @@ export class GitManager {
       await this.git.raw.raw(['revert', '--no-edit', hash]);
       return `Reverted commit ${hash.substring(0, 7)}`;
     } catch (err) {
-      return `Revert failed: ${err}`;
+      // Abort the failed revert so the repo stays clean
+      try { await this.git.raw.raw(['revert', '--abort']); } catch {}
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('CONFLICT')) {
+        return `Can't rewind — later changes depend on this commit. Try a more recent one.`;
+      }
+      return `Revert failed: ${msg}`;
     }
   }
 
