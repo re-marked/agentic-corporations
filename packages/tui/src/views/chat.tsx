@@ -170,48 +170,9 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
       return;
     }
 
-    // /time-machine — show recent git history of the corp
-    if (text.trim().toLowerCase() === '/time-machine' || text.trim().toLowerCase() === '/tm') {
-      try {
-        const commits = await daemonClient.getGitLog(15);
-        if (commits.length === 0) {
-          writeSystemMessage('No git history found.');
-        } else {
-          const lines = ['━━━ Time Machine ━━━', ''];
-          for (const c of commits) {
-            const ago = new Date(c.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const hash = c.hash.substring(0, 7);
-            lines.push(`  ${hash}  ${ago}  ${c.message}`);
-          }
-          lines.push('', 'Use /rewind <hash> to undo a specific commit.');
-          writeSystemMessage(lines.join('\n'));
-        }
-      } catch (err) {
-        writeSystemMessage(`Failed to read git history: ${err instanceof Error ? err.message : String(err)}`);
-      }
-      return;
-    }
-
-    // /rewind <hash> — go back to a specific point in time
-    const rewindMatch = text.trim().match(/^\/rewind\s+([a-f0-9]+)$/i);
-    if (rewindMatch) {
-      try {
-        const { result } = await daemonClient.rewindTo(rewindMatch[1]!);
-        writeSystemMessage(result);
-      } catch (err) {
-        writeSystemMessage(`Rewind failed: ${err instanceof Error ? err.message : String(err)}`);
-      }
-      return;
-    }
-
-    // /forward — undo the last rewind, restore timeline
-    if (text.trim().toLowerCase() === '/forward' || text.trim().toLowerCase() === '/ff') {
-      try {
-        const { result } = await daemonClient.forward();
-        writeSystemMessage(result);
-      } catch (err) {
-        writeSystemMessage(`Forward failed: ${err instanceof Error ? err.message : String(err)}`);
-      }
+    // /time-machine, /tm, /rewind, /forward — all open the Time Machine view
+    if (text.trim().toLowerCase() === '/time-machine' || text.trim().toLowerCase() === '/tm' || text.trim().toLowerCase() === '/rewind' || text.trim().toLowerCase() === '/forward' || text.trim().toLowerCase() === '/ff') {
+      onNavigate?.({ type: 'time-machine' });
       return;
     }
 
@@ -241,9 +202,7 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
         '  /ping              Test command (responds with pong!)',
         '  /uptime            Show daemon uptime and message count',
         '  /logs              Show recent daemon logs',
-        '  /time-machine, /tm Browse corp git history',
-        '  /rewind <hash>     Go back to a point in time',
-        '  /forward, /ff      Undo the last rewind',
+        '  /tm                Open Time Machine (rewind/forward any snapshot)',
         '',
         '⚙️ Management:',
         '  /hire              Open agent hiring wizard',

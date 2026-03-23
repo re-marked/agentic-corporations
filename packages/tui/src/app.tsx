@@ -21,6 +21,7 @@ import { AgentInspector } from './views/agent-inspector.js';
 import { TaskDetail } from './views/task-detail.js';
 import { CorpHome } from './views/corp-home.js';
 import { SpriteShowcase } from './views/sprite-showcase.js';
+import { TimeMachine } from './views/time-machine.js';
 import { StatusBar } from './components/status-bar.js';
 import { DaemonClient } from './lib/daemon-client.js';
 import { useDaemonEvents } from './hooks/use-daemon-events.js';
@@ -305,6 +306,7 @@ function ResumeView({ corpPath }: { corpPath: string }) {
     'agent-inspector': globalHints,
     'task-detail': globalHints,
     'corp-home': `Enter:open  ${globalHints}`,
+    'time-machine': 'Enter:rewind  F:forward  R:refresh  Esc:back',
   };
 
   const renderView = () => {
@@ -365,6 +367,12 @@ function ResumeView({ corpPath }: { corpPath: string }) {
       case 'sprite-showcase':
         return (
           <SpriteShowcase
+            onBack={goBack}
+          />
+        );
+      case 'time-machine':
+        return (
+          <TimeMachine
             onBack={goBack}
           />
         );
