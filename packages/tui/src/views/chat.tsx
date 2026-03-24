@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Box, Text, useInput, Static } from 'ink';
 import Spinner from 'ink-spinner';
 import {
@@ -12,7 +12,7 @@ import {
   MESSAGES_JSONL,
 } from '@claudecorp/shared';
 import { join } from 'node:path';
-import { MessageList } from '../components/message-list.js';
+import { MessageList, renderContent } from '../components/message-list.js';
 import { MessageInput } from '../components/message-input.js';
 import { MemberSidebar } from '../components/member-sidebar.js';
 import { useMessages } from '../hooks/use-messages.js';
@@ -22,7 +22,6 @@ import { TaskWizard } from './task-wizard.js';
 import { ProjectWizard } from './project-wizard.js';
 import { TeamWizard } from './team-wizard.js';
 import { useCorp } from '../context/corp-context.js';
-import { DialogueRenderer } from '../components/dialogue-renderer.js';
 
 const THINKING_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes — agents can work long
 
@@ -54,7 +53,6 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
   const [showProjectWizard, setShowProjectWizard] = useState(false);
   const [showTeamWizard, setShowTeamWizard] = useState(false);
   const [showMemberSidebar, setShowMemberSidebar] = useState(false);
-  const [dialogueMode, setDialogueMode] = useState(false);
   const lastMsgCount = useRef(messages.length);
 
   // Update tab title with channel name
@@ -108,10 +106,6 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
     if (showHireWizard) return;
     if (key.ctrl && input === 'm') {
       setShowMemberSidebar(prev => !prev);
-    }
-    // Ctrl+R — toggle RPG dialogue mode (DMs only)
-    if (key.ctrl && input === 'r' && isDm && dmAgent) {
-      setDialogueMode(prev => !prev);
     }
   });
 
@@ -687,6 +681,8 @@ Always consider what happens when things go wrong.`,
   const isStreaming = !!channelStream;
   const hasStreamContent = !!(channelStream?.content);
 
+  const memberMap = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
+
   const renderMsg = (msg: ChannelMessage) => {
     const sender = members.find((m) => m.id === msg.senderId);
     const name = sender?.displayName ?? 'system';
@@ -707,33 +703,10 @@ Always consider what happens when things go wrong.`,
           <Text bold color={sender?.type === 'user' ? COLORS.user : COLORS.agent}>{name}</Text>
           <Text color={COLORS.subtle}>{time}</Text>
         </Box>
-        <Text wrap="wrap">{msg.content}</Text>
+        <Text wrap="wrap">{renderContent(msg.content, memberMap)}</Text>
       </Box>
     );
   };
-
-  // RPG dialogue mode — portrait + speech bubble for DM channels
-  if (dialogueMode && isDm && dmAgent) {
-    return (
-      <Box flexDirection="column" flexGrow={1}>
-        <DialogueRenderer
-          agent={dmAgent}
-          messages={messages}
-          members={members}
-          streamData={channelStream}
-          thinking={thinking}
-          thinkingAgents={thinkingAgents}
-          dispatchingAgents={[...dispatchingAgents]}
-        />
-        <MessageInput
-          onSend={handleSend}
-          disabled={sending}
-          placeholder={`Say something to ${dmAgent.displayName}...`}
-        />
-        <Text color={COLORS.muted}> #{channel.name}  C-R:chat mode  C-K:palette  C-H:home  Esc:back</Text>
-      </Box>
-    );
-  }
 
   return (
     <Box flexDirection="column" flexGrow={1}>
@@ -768,7 +741,7 @@ Always consider what happens when things go wrong.`,
         disabled={sending}
         placeholder="Type a message... (/hire to add agents)"
       />
-      <Text color={COLORS.muted}> #{channel.name}  {isDm ? 'C-R:RPG mode  ' : ''}C-K:palette  C-H:home  C-T:tasks  C-M:members  Esc:back</Text>
+      <Text color={COLORS.muted}> #{channel.name}  C-K:palette  C-H:home  C-T:tasks  C-M:members  Esc:back</Text>
     </Box>
   );
 }
