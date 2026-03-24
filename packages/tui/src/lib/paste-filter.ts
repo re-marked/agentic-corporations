@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { PassThrough } from 'stream';
 
 const PASTE_START = '\x1b[200~';
 const PASTE_END = '\x1b[201~';
@@ -6,21 +6,18 @@ const PASTE_END = '\x1b[201~';
 /**
  * Stdin filter that intercepts bracketed paste sequences.
  *
- * Bracketed paste mode: the terminal wraps pasted text with escape sequences:
- *   \x1b[200~  <pasted content>  \x1b[201~
+ * Extends PassThrough (a real Node.js stream) so Ink gets a proper stream
+ * interface with setEncoding, pipe, resume, pause — all working correctly.
  *
- * This filter strips those markers and emits a 'paste' event with the content.
- * Normal (non-paste) input is re-emitted as 'data' events.
- *
- * Designed as a drop-in replacement for process.stdin when passed to Ink's render().
+ * Paste content between \x1b[200~ and \x1b[201~ is buffered and emitted
+ * as a 'paste' event. Everything else flows through to Ink normally.
  */
-export class PasteFilterStdin extends EventEmitter {
+export class PasteFilterStdin extends PassThrough {
   isTTY = true;
   private pasteBuffer: string | null = null;
-  private destroyed = false;
 
   constructor() {
-    super();
+    super({ encoding: 'utf-8' });
     process.stdin.on('data', this.handleData);
   }
 
@@ -31,38 +28,29 @@ export class PasteFilterStdin extends EventEmitter {
     return this;
   }
 
-  resume(): this {
+  override resume(): this {
     process.stdin.resume();
-    return this;
+    return super.resume();
   }
 
-  pause(): this {
+  override pause(): this {
     process.stdin.pause();
-    return this;
+    return super.pause();
   }
 
-  ref(): this { return this; }
-  unref(): this { return this; }
-
-  // Ink calls setEncoding('utf-8') on stdin during useInput setup
-  setEncoding(_encoding: string): this { return this; }
-
-  // Ink reads fd for internal checks
   get fd(): number { return process.stdin.fd; }
 
-  destroy(): void {
-    this.destroyed = true;
+  override destroy(): this {
     process.stdin.off('data', this.handleData);
+    return super.destroy();
   }
 
-  private handleData = (chunk: Buffer): void => {
-    if (this.destroyed) return;
-
-    const data = chunk.toString('utf-8');
+  private handleData = (chunk: Buffer | string): void => {
+    const data = typeof chunk === 'string' ? chunk : chunk.toString('utf-8');
 
     // Fast path: no escape sequences and not mid-paste → pass through
     if (this.pasteBuffer === null && !data.includes('\x1b[')) {
-      this.emit('data', chunk);
+      this.push(data);
       return;
     }
 
@@ -78,7 +66,6 @@ export class PasteFilterStdin extends EventEmitter {
           this.pasteBuffer = null;
           remaining = remaining.slice(endIdx + PASTE_END.length);
         } else {
-          // End marker not in this chunk — keep buffering
           this.pasteBuffer += remaining;
           remaining = '';
         }
@@ -86,15 +73,13 @@ export class PasteFilterStdin extends EventEmitter {
         // Normal mode — look for paste start marker
         const startIdx = remaining.indexOf(PASTE_START);
         if (startIdx !== -1) {
-          // Pass through any normal input before the marker
           if (startIdx > 0) {
-            this.emit('data', Buffer.from(remaining.slice(0, startIdx), 'utf-8'));
+            this.push(remaining.slice(0, startIdx));
           }
           this.pasteBuffer = '';
           remaining = remaining.slice(startIdx + PASTE_START.length);
         } else {
-          // No paste markers — pass everything through
-          this.emit('data', Buffer.from(remaining, 'utf-8'));
+          this.push(remaining);
           remaining = '';
         }
       }
