@@ -141,9 +141,14 @@ export async function hireAgent(
       agentDir: gwAgentDir,
     });
 
-    // Restart the gateway to pick up the new agent — hot-reload is unreliable
-    // especially when the gateway started with zero agents
-    await gw.restart();
+    // Start gateway if this is the first agent, otherwise let OpenClaw hot-reload
+    const gwStatus = gw.getStatus();
+    if (gwStatus === 'stopped') {
+      await gw.start();
+    } else {
+      // Gateway already running — OpenClaw watches agents.list for changes
+      await new Promise((r) => setTimeout(r, 1500));
+    }
   }
 
   // 7. Register in process manager

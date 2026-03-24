@@ -84,8 +84,10 @@ export class ProcessManager {
       });
     }
 
-    // Always start the gateway — ready for agents to be hired without cold start
-    await gw.start();
+    // Start the gateway if there are already agents registered
+    if (gw.hasAgents()) {
+      await gw.start();
+    }
   }
 
   async spawnAgent(memberId: string, gatewayToken?: string): Promise<AgentProcess> {
