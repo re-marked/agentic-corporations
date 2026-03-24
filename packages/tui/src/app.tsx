@@ -39,13 +39,7 @@ export function App() {
 
   if (termSize.cols < 80 || termSize.rows < 20) {
     return (
-      <Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
-        <Box flexDirection="column" borderStyle="round" borderColor={COLORS.warning} paddingX={3} paddingY={1}>
-          <Text bold color={COLORS.warning}>Terminal too small</Text>
-          <Text color={COLORS.text}>Claude Corp needs at least 80×20. Current: {termSize.cols}×{termSize.rows}</Text>
-          <Text color={COLORS.muted}>Resize your terminal to continue.</Text>
-        </Box>
-      </Box>
+      <Text color={COLORS.warning}>Too small ({termSize.cols}x{termSize.rows}) — need 80x20</Text>
     );
   }
 
