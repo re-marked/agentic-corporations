@@ -110,6 +110,8 @@ function ResumeView({ corpPath }: { corpPath: string }) {
   const [showSwitcher, setShowSwitcher] = useState(false);
   const lastVisitedRef = React.useRef<Map<string, string>>(new Map());
   const [, forceRender] = useState(0);
+  const bootStyle = getBootStyle();
+  const [bootDone, setBootDone] = useState(!bootStyle);
 
   // WebSocket event bus for real-time streaming + dispatch updates
   const events = useDaemonEvents(daemonPort);
@@ -262,9 +264,6 @@ function ResumeView({ corpPath }: { corpPath: string }) {
       </Box>
     );
   }
-
-  const bootStyle = getBootStyle();
-  const [bootDone, setBootDone] = useState(!bootStyle); // no boot flag = skip animation
 
   if (!ready || !client || !bootDone) {
     if (bootStyle) {
