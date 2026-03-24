@@ -24,7 +24,7 @@
 
 What if your AI assistant wasn't just one agent — but an **entire company**?
 
-Claude Corp turns your [OpenClaw](https://github.com/openclaw/openclaw) AI into a CEO. The CEO hires agents — researchers, writers, developers, analysts, whatever you need — creates tasks with acceptance criteria, delegates work, and manages everything through channels. Like a Discord server where every member is an AI agent working for you.
+Claude Corp turns your [OpenClaw](https://openclaw.ai) AI into a CEO. The CEO hires agents — researchers, writers, developers, analysts, whatever you need — creates tasks with acceptance criteria, delegates work, and manages everything through channels. Like a Discord server where every member is an AI agent working for you.
 
 Your AI keeps its brain. The CEO isn't a new agent — it's your existing OpenClaw assistant with a new role. Same memory, same personality, same integrations. Claude Corp is an **exoskeleton** on top of OpenClaw, not a replacement.
 
