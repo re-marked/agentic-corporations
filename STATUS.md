@@ -127,6 +127,13 @@ Cross items off as they ship. Reference: `docs/` for full vision specs.
 - [x] Ink Static for message history (scrollable terminal buffer)
 - [x] Time Machine: 5s git snapshots, /tm timeline browser, rewind/forward any point
 - [x] Bracketed paste: terminal-level paste detection, mixed typed + pasted content, PUA markers
+- [x] Alt screen buffer: preserves scrollback, clean exit restores terminal
+- [x] Input history: up/down arrow recalls last 100 sent messages
+- [x] Readline shortcuts: Ctrl+A(home) Ctrl+E(end) Ctrl+W(word-del) Ctrl+U(line-kill)
+- [x] Clickable URLs: OSC 8 hyperlinks in messages
+- [x] Min terminal size guard: warning below 80x20
+- [x] Crash cleanup: uncaughtException handler restores terminal + stops daemon
+- [x] Kitty keyboard protocol: auto-detect for supporting terminals
 
 ## Layer 7: CLI — DONE
 
@@ -270,4 +277,5 @@ Cross items off as they ship. Reference: `docs/` for full vision specs.
 11. ~~**Streaming** — WebSocket event bus, real-time token preview~~
 12. ~~**State** — CorpContext, useCorp(), centralized state~~
 13. ~~**Escalation** — 5-level chain, BLOCKED auto-notify, blocker resolution loop~~
-14. **Next**: multi-step pipelines, agent memory, auto-resume blocked tasks
+14. ~~**TUI polish** — alt screen, input history, readline, URLs, crash cleanup~~
+15. **Next**: steampunk rebuild, /assign, /standup, thread support
