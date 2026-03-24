@@ -21,6 +21,7 @@ import { MessageRouter } from './router.js';
 import { GitManager } from './git-manager.js';
 import { HeartbeatManager } from './heartbeat.js';
 import { TaskWatcher } from './task-watcher.js';
+import { HireWatcher } from './hire-watcher.js';
 import { EventBus, type DaemonEvent } from './events.js';
 import { createApi } from './api.js';
 import { log, logError } from './logger.js';
@@ -33,6 +34,7 @@ export class Daemon {
   gitManager: GitManager;
   heartbeat: HeartbeatManager;
   taskWatcher: TaskWatcher;
+  hireWatcher: HireWatcher;
   readonly startedAt: number = Date.now();
   /** Per-agent partial streaming content — updated as SSE tokens arrive. */
   streaming = new Map<string, { agentName: string; content: string; channelId: string }>();
@@ -49,6 +51,7 @@ export class Daemon {
     this.gitManager = new GitManager(corpRoot);
     this.heartbeat = new HeartbeatManager(this);
     this.taskWatcher = new TaskWatcher(this);
+    this.hireWatcher = new HireWatcher(this);
   }
 
   async start(): Promise<number> {
@@ -87,6 +90,7 @@ export class Daemon {
     this.gitManager.start();
     this.heartbeat.start();
     this.taskWatcher.start();
+    this.hireWatcher.start();
   }
 
   async spawnAllAgents(): Promise<void> {
@@ -191,6 +195,7 @@ export class Daemon {
   async stop(): Promise<void> {
     this.heartbeat.stop();
     this.taskWatcher.stop();
+    this.hireWatcher.stop();
     this.router.stop();
     await this.gitManager.stop();
     await this.processManager.stopAll();
