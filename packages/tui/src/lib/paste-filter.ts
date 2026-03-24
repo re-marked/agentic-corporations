@@ -44,6 +44,12 @@ export class PasteFilterStdin extends EventEmitter {
   ref(): this { return this; }
   unref(): this { return this; }
 
+  // Ink calls setEncoding('utf-8') on stdin during useInput setup
+  setEncoding(_encoding: string): this { return this; }
+
+  // Ink reads fd for internal checks
+  get fd(): number { return process.stdin.fd; }
+
   destroy(): void {
     this.destroyed = true;
     process.stdin.off('data', this.handleData);
