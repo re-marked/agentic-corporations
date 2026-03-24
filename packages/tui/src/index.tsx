@@ -17,7 +17,7 @@ const pasteStdin = getPasteFilter();
 const { unmount } = render(<App />, {
   stdin: pasteStdin as any,
   exitOnCtrlC: true,
-  incrementalRendering: true,
+  // NOTE: incrementalRendering breaks border-box input — line-diff appends instead of replacing
   kittyKeyboard: { mode: 'auto', flags: ['disambiguateEscapeCodes'] },
 });
 
