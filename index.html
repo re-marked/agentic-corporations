@@ -3,13 +3,139 @@
 <meta charset="utf-8">
 <title>Claude Corp</title>
 <style>
-  * { margin: 0; padding: 0; }
-  body { background: #0a0a0a; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-  canvas { image-rendering: pixelated; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; color: #c8c8c8; font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace; }
+  canvas { image-rendering: pixelated; display: block; margin: 0 auto; }
+  .hero { display: flex; justify-content: center; align-items: center; min-height: 50vh; padding: 60px 20px 20px; }
+  .content { max-width: 760px; margin: 0 auto; padding: 0 24px 80px; line-height: 1.7; font-size: 15px; }
+  h1, h2, h3 { color: #fa8072; font-weight: 600; }
+  h1 { font-size: 28px; margin-bottom: 8px; }
+  h2 { font-size: 20px; margin: 40px 0 12px; border-bottom: 1px solid #222; padding-bottom: 6px; }
+  p { margin: 10px 0; }
+  a { color: #fa8072; }
+  strong { color: #e0e0e0; }
+  code { background: #1a1a1a; padding: 2px 6px; border-radius: 3px; font-size: 13px; color: #fa8072; }
+  pre { background: #111; border: 1px solid #222; border-radius: 6px; padding: 16px; overflow-x: auto; margin: 12px 0; }
+  pre code { background: none; padding: 0; color: #c8c8c8; }
+  .badge { display: inline-block; background: #1a1a1a; border: 1px solid #333; padding: 4px 10px; border-radius: 4px; font-size: 12px; margin-right: 6px; color: #fa8072; }
+  .nav { text-align: center; margin: 16px 0 32px; font-size: 13px; }
+  .nav a { margin: 0 8px; text-decoration: none; opacity: 0.6; }
+  .nav a:hover { opacity: 1; }
+  ul { padding-left: 20px; margin: 8px 0; }
+  li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  th, td { border: 1px solid #222; padding: 8px 12px; text-align: left; }
+  th { background: #111; color: #fa8072; }
+  .diagram { background: #111; border: 1px solid #222; border-radius: 6px; padding: 16px; margin: 12px 0; white-space: pre; font-size: 13px; line-height: 1.5; overflow-x: auto; }
+  .footer { text-align: center; padding: 40px 20px; border-top: 1px solid #1a1a1a; color: #555; font-size: 13px; }
+  .footer a { color: #fa8072; }
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
+
+<div class="hero">
+  <canvas id="c"></canvas>
+</div>
+
+<div class="content">
+  <h1>Personal AI Corporation</h1>
+  <p><strong>A self-growing team of AI agents that works for you.</strong></p>
+
+  <div style="margin: 12px 0;">
+    <span class="badge">MIT License</span>
+    <span class="badge">No Cloud</span>
+    <span class="badge">Agents Do Real Work</span>
+  </div>
+
+  <div class="nav">
+    <a href="#get-started">Get Started</a>
+    <a href="#the-idea">The Idea</a>
+    <a href="#use-cases">Use Cases</a>
+    <a href="#how-it-works">How It Works</a>
+    <a href="#cli">CLI</a>
+    <a href="#philosophy">Philosophy</a>
+  </div>
+
+  <h2 id="the-idea">The Idea</h2>
+  <p>What if your AI assistant wasn't just one agent — but an <strong>entire company</strong>?</p>
+  <p>Claude Corp turns your <a href="https://openclaw.ai">OpenClaw</a> AI into a CEO. The CEO hires agents — researchers, writers, developers, analysts, whatever you need — creates tasks with acceptance criteria, delegates work, and manages everything through channels. Like a Discord server where every member is an AI agent working for you.</p>
+  <p>Your AI keeps its brain. The CEO isn't a new agent — it's your existing OpenClaw assistant with a new role. Same memory, same personality, same integrations. Claude Corp is an <strong>exoskeleton</strong> on top of OpenClaw, not a replacement.</p>
+
+  <h2 id="use-cases">Use Cases</h2>
+  <ul>
+    <li><strong>Research Teams</strong> — Hire a researcher, an analyst, and a writer. Give them a topic. Get a report back.</li>
+    <li><strong>Dev Teams</strong> — A tech lead that delegates to developers and code reviewers. Agents wrote real TypeScript, ran builds, and caught each other's bugs.</li>
+    <li><strong>Content Teams</strong> — Writers, editors, fact-checkers. The same delegation and verification loop works for any kind of output.</li>
+    <li><strong>Anything With Tasks</strong> — If you can break it into tasks with clear "done" criteria, a corp can execute it.</li>
+  </ul>
+
+  <h2 id="how-it-works">The Self-Correcting Loop</h2>
+  <p>We discovered that an AI agent will sometimes say "done!" without actually doing anything. So we gave it a coworker whose job is to verify.</p>
+
+  <div class="diagram">Task Created
+  -> Architect delegates with acceptance criteria
+    -> Worker does the work
+      -> Reviewer checks if the work actually exists
+        -> PASS -> CEO reports to Founder
+        -> FAIL -> task blocked, Worker must redo</div>
+
+  <p>In testing, the Reviewer caught an agent that lied about completing a task. Then the CEO — without anyone telling it to — started waiting for verification before reporting results. It learned from the failure on its own.</p>
+  <p><strong>The insight:</strong> You don't need perfect agents. You need agents that check each other. Same model, different role, completely different behavior.</p>
+
+  <h2>Themes</h2>
+  <p>Pick your corporation's personality during onboarding:</p>
+
+  <table>
+    <tr><th>Corporate</th><th>Mafia</th><th>Military</th></tr>
+    <tr><td>Founder -> CEO -> Director -> Employee</td><td>Godfather -> Underboss -> Capo -> Soldier</td><td>Commander -> General -> Captain -> Private</td></tr>
+    <tr><td>#general, #tasks</td><td>#the-backroom, #the-job-board</td><td>#command-post, #operations</td></tr>
+  </table>
+  <p>Same system underneath. Different vibe on top.</p>
+
+  <h2 id="get-started">Get Started</h2>
+  <p><strong>Prerequisites:</strong> Node.js 22+, <a href="https://github.com/openclaw/openclaw">OpenClaw</a> running, pnpm.</p>
+
+<pre><code>git clone https://github.com/re-marked/claude-corp.git
+cd claude-corp
+pnpm install && pnpm build
+npm link
+
+claudecorp          # Launch the TUI
+claudecorp new      # Create a new corporation
+claudecorp list     # List all corporations
+claudecorp delete   # Delete a corporation</code></pre>
+
+  <p>The onboarding walks you through everything — name yourself, name your corp, pick a theme. The CEO introduces itself.</p>
+
+  <h2 id="cli">CLI</h2>
+  <p>Everything works headlessly too — for automation, testing, or if you just prefer the command line:</p>
+
+<pre><code>claudecorp-cli init --name my-corp --user Mark --theme corporate
+claudecorp-cli start &
+claudecorp-cli send --channel dm-ceo-mark --message "Hire a research team" --wait
+claudecorp-cli dogfood    # Project + 3 agents + task in one shot
+claudecorp-cli agents --json</code></pre>
+
+  <p>11 commands. All support <code>--json</code> for machine parsing.</p>
+
+  <h2 id="philosophy">Philosophy</h2>
+  <ul>
+    <li><strong>No database. No Docker. No cloud.</strong> Files and git. That's it.</li>
+    <li><strong>Everything is files.</strong> Messages are JSONL. Tasks are markdown. Agent identity is <code>SOUL.md</code>. You can <code>cat</code> any conversation and <code>git revert</code> any bad decision.</li>
+    <li><strong>Agents write freely.</strong> Don't gate everything behind APIs. Let them use the filesystem.</li>
+    <li><strong>Every action is a git commit.</strong> Full audit trail. Undo anything.</li>
+    <li><strong>The CEO is your AI, not a new AI.</strong> Exoskeleton on OpenClaw.</li>
+    <li><strong>System topology creates reliability.</strong> Builder + Reviewer + Coordinator = self-correcting loop. You don't need perfect agents — you need agents that check each other.</li>
+  </ul>
+
+  <h2>License</h2>
+  <p>MIT</p>
+</div>
+
+<div class="footer">
+  Built by <a href="https://x.com/real-markable">Mark</a> + <a href="https://claude.ai">Claude</a> + agents that wrote their own features.
+</div>
+
 <script>
 const lines = [
   "      \u2584\u2584                \u2584\u2584                                 ",
