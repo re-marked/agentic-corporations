@@ -417,23 +417,52 @@ export class MessageRouter {
         log(`[router] ${target.displayName} split response: main=${mainContent.length} chars, thread=${threadContent.length} chars`);
       }
 
+      const msgPath = join(this.daemon.corpRoot, channel.path, MESSAGES_JSONL);
+
+      // If agent used [thread] at the very start (no main content), entire response is threaded
+      if (threadContent && !mainContent) {
+        const threadMsg: ChannelMessage = {
+          id: generateId(),
+          channelId: channel.id,
+          senderId: targetId,
+          threadId: responseThreadId,
+          content: threadContent,
+          kind: 'text',
+          mentions: resolveMentions(threadContent, members),
+          metadata: { source: 'router' },
+          depth: msg.depth + 1,
+          originId: msg.originId,
+          timestamp: new Date().toISOString(),
+        };
+        log(`[router] WRITING ${target.displayName}'s threaded response (${threadContent.length} chars)`);
+        appendMessage(msgPath, threadMsg);
+        const responseMsg = threadMsg;
+
+        log(`[router] ${target.displayName} responded in thread in #${channel.name}`);
+        this.daemon.streaming.delete(targetId);
+        this.activeDispatches.delete(target.displayName);
+        this.daemon.events.broadcast({ type: 'stream_end', agentName: target.displayName, channelId: channel.id });
+        this.daemon.gitManager.markDirty(target.displayName);
+        this.drainQueue(targetId);
+        return;
+      }
+
       // Write main channel response
       const mainMsg: ChannelMessage = {
         id: generateId(),
         channelId: channel.id,
         senderId: targetId,
-        threadId: msg.threadId, // stays in same context (null for main, threadId for thread)
-        content: mainContent || threadContent!, // if no main content, put thread content in main
+        threadId: msg.threadId,
+        content: mainContent,
         kind: 'text',
-        mentions: resolveMentions(mainContent || threadContent!, members),
+        mentions: resolveMentions(mainContent, members),
         metadata: { source: 'router' },
         depth: msg.depth + 1,
         originId: msg.originId,
         timestamp: new Date().toISOString(),
       };
 
-      const msgPath = join(this.daemon.corpRoot, channel.path, MESSAGES_JSONL);
-      log(`[router] WRITING ${target.displayName}'s response (${mainMsg.content.length} chars) "${mainMsg.content.substring(0, 80)}"`);
+      log(`[router] WRITING ${target.displayName}'s response (${mainContent.length} chars) "${mainContent.substring(0, 80)}"`);
       appendMessage(msgPath, mainMsg);
 
       // Write thread portion as a separate message if it exists
