@@ -341,7 +341,9 @@ export class MessageRouter {
               toolName: tool.name,
               args: tool.args,
             });
-            // Write tool_event to JSONL for permanent history
+          },
+          onToolEnd: (tool) => {
+            // Write tool_event to JSONL AFTER tool completes — permanent history
             const toolMsg: ChannelMessage = {
               id: generateId(),
               channelId: channel.id,
@@ -356,8 +358,6 @@ export class MessageRouter {
               timestamp: new Date().toISOString(),
             };
             appendMessage(join(this.daemon.corpRoot, channel.path, MESSAGES_JSONL), toolMsg);
-          },
-          onToolEnd: (tool) => {
             this.daemon.events.broadcast({
               type: 'tool_end',
               agentName: target.displayName,
