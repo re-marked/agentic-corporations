@@ -30,11 +30,12 @@ import { COLORS } from './theme.js';
 import { setDaemonRef } from './lib/daemon-ref.js';
 import { BootSequence, getBootStyle } from './components/boot-sequence.js';
 
-export function App({ forceNew }: { forceNew?: boolean } = {}) {
+export function App({ forceNew: forceNewProp }: { forceNew?: boolean } = {}) {
   // All hooks MUST be before any early returns (React rules of hooks)
   const [termSize, setTermSize] = useState({ cols: process.stdout.columns ?? 80, rows: process.stdout.rows ?? 24 });
   const [, forceReload] = useState(0);
   const [selectedCorp, setSelectedCorp] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(!!forceNewProp);
 
   useEffect(() => {
     const onResize = () => setTermSize({ cols: process.stdout.columns ?? 80, rows: process.stdout.rows ?? 24 });
@@ -51,8 +52,8 @@ export function App({ forceNew }: { forceNew?: boolean } = {}) {
 
   const corps = listCorps();
 
-  if (corps.length === 0 || forceNew) {
-    return <OnboardingView onComplete={() => forceReload((n) => n + 1)} />;
+  if (corps.length === 0 || showOnboarding) {
+    return <OnboardingView onComplete={() => { setShowOnboarding(false); forceReload((n) => n + 1); }} />;
   }
 
   if (selectedCorp) {

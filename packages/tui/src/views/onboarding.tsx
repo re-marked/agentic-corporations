@@ -99,10 +99,15 @@ export function OnboardingView({ onComplete }: { onComplete?: () => void }) {
       setStatusText(`${selectedTheme.ranks.master} is waking up...`);
       const { dmChannel } = setupCeo(root, globalConfig, userName);
 
+      const { writeFileSync: dbg } = await import('node:fs');
+      const logf = (m: string) => dbg(join(root, 'boot.log'), m + '\n', { flag: 'a' });
+
       setStatusText('Starting daemon...');
       setSilentMode(true);
+      logf('Starting daemon...');
       const d = new Daemon(root, globalConfig);
       const port = await d.start();
+      logf('Daemon on port ' + port);
       setDaemon(d);
       setDaemonPort(port);
       setDaemonClient(new DaemonClient(port));
@@ -111,14 +116,17 @@ export function OnboardingView({ onComplete }: { onComplete?: () => void }) {
         ? 'Connecting to your OpenClaw...'
         : `Waking up your ${selectedTheme.ranks.master}...`);
 
+      logf('Spawning agents...');
       try {
         await d.spawnAllAgents();
-      } catch {
-        // partial start is ok
+        logf('spawnAll done');
+      } catch (e) {
+        logf('spawnAll error: ' + (e instanceof Error ? e.message : String(e)));
       }
 
-      // Quick check — CEO should be ready almost instantly for remote mode
-      let ready = d.processManager.listAgents().some((a) => a.status === 'ready');
+      const agentList = d.processManager.listAgents();
+      logf('Agents: ' + JSON.stringify(agentList.map((a: any) => ({ n: a.displayName, s: a.status }))));
+      let ready = agentList.some((a) => a.status === 'ready');
       if (!ready) {
         // Give it a few seconds
         for (let i = 0; i < 8; i++) {
