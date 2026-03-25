@@ -171,3 +171,18 @@ export function findCorp(name: string): string | null {
   const found = corps.find((c) => c.name === name);
   return found?.path ?? null;
 }
+
+export function deleteCorp(name: string): boolean {
+  const index = readConfigOr<CorpsIndex>(CORPS_INDEX_PATH, { corps: [] });
+  const entry = index.corps.find((c) => c.name === name);
+  if (!entry) return false;
+
+  // Remove directory
+  const { rmSync } = require('fs') as typeof import('fs');
+  try { rmSync(entry.path, { recursive: true, force: true }); } catch {}
+
+  // Remove from index
+  index.corps = index.corps.filter((c) => c.name !== name);
+  writeConfig(CORPS_INDEX_PATH, index);
+  return true;
+}

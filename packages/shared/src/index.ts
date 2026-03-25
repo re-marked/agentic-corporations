@@ -55,7 +55,7 @@ export {
 } from './global-config.js';
 
 // Corp management
-export { scaffoldCorp, listCorps, findCorp } from './corp.js';
+export { scaffoldCorp, listCorps, findCorp, deleteCorp } from './corp.js';
 
 // Agent setup
 export {
