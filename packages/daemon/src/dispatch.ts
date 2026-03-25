@@ -70,18 +70,26 @@ export async function dispatchViaWebSocket(
       if (event.stream === 'tool') {
         const data = event.data as any;
         const toolInfo: ToolCallInfo = {
-          name: data.name ?? 'unknown',
-          toolCallId: data.toolCallId ?? '',
-          args: data.args,
+          name: data.name ?? data.toolName ?? 'unknown',
+          toolCallId: data.toolCallId ?? data.id ?? '',
+          args: data.args ?? data.input,
         };
 
-        if (data.phase === 'start') {
-          log(`[dispatch] Tool start: ${toolInfo.name} (${toolInfo.toolCallId})`);
+        const phase = data.phase ?? data.type ?? '';
+        log(`[dispatch] Tool event: ${toolInfo.name} phase=${phase}`);
+
+        if (phase === 'start' || phase === 'call') {
           callbacks.onToolStart?.(toolInfo);
         }
-        if (data.phase === 'end') {
-          log(`[dispatch] Tool end: ${toolInfo.name}`);
-          callbacks.onToolEnd?.({ ...toolInfo, result: data.result });
+        if (phase === 'end' || phase === 'result' || phase === 'complete' || phase === 'done') {
+          callbacks.onToolEnd?.({ ...toolInfo, result: data.result ?? data.output });
+        }
+
+        // If no phase distinction, treat every tool event as start+end
+        // (OpenClaw might send a single event per tool call)
+        if (!phase) {
+          callbacks.onToolStart?.(toolInfo);
+          callbacks.onToolEnd?.(toolInfo);
         }
       }
 
