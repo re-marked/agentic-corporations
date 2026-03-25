@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Box, Text, useInput } from 'ink';
 import {
   listCorps,
+  deleteCorp,
   readConfig,
   ensureGlobalConfig,
   type Channel,
@@ -62,16 +63,40 @@ export function App({ forceNew }: { forceNew?: boolean } = {}) {
     return <ResumeView corpPath={corps[0]!.path} />;
   }
 
-  return <CorpSelector corps={corps} onSelect={(path) => setSelectedCorp(path)} />;
+  return (
+    <CorpSelector
+      corps={corps}
+      onSelect={(path) => setSelectedCorp(path)}
+      onNew={() => forceReload((n) => n + 1)}
+      onDelete={(name) => { deleteCorp(name); forceReload((n) => n + 1); }}
+    />
+  );
 }
 
-function CorpSelector({ corps, onSelect }: { corps: { name: string; path: string }[]; onSelect: (path: string) => void }) {
+function CorpSelector({ corps, onSelect, onNew, onDelete }: {
+  corps: { name: string; path: string }[];
+  onSelect: (path: string) => void;
+  onNew: () => void;
+  onDelete: (name: string) => void;
+}) {
+  // Items: corps + "New corporation" action
+  const totalItems = corps.length + 1;
   const [index, setIndex] = useState(0);
 
   useInput((input, key) => {
     if (key.upArrow) setIndex((i) => Math.max(0, i - 1));
-    if (key.downArrow) setIndex((i) => Math.min(corps.length - 1, i + 1));
-    if (key.return) onSelect(corps[index]!.path);
+    if (key.downArrow) setIndex((i) => Math.min(totalItems - 1, i + 1));
+    if (key.return) {
+      if (index < corps.length) {
+        onSelect(corps[index]!.path);
+      } else {
+        onNew();
+      }
+    }
+    // Backspace/Delete on a corp = delete it
+    if ((key.backspace || key.delete) && index < corps.length) {
+      onDelete(corps[index]!.name);
+    }
   });
 
   return (
@@ -90,8 +115,16 @@ function CorpSelector({ corps, onSelect }: { corps: { name: string; path: string
             </Text>
           </Box>
         ))}
+        <Box key="__new" gap={1}>
+          <Text color={index === corps.length ? COLORS.success : COLORS.muted}>
+            {index === corps.length ? '\u25B8' : ' '}
+          </Text>
+          <Text bold={index === corps.length} color={index === corps.length ? COLORS.success : COLORS.muted}>
+            + New corporation
+          </Text>
+        </Box>
         <Box marginTop={1}>
-          <Text color={COLORS.muted}>\u2191\u2193 to select, Enter to open</Text>
+          <Text color={COLORS.muted}>{'\u2191\u2193'} select  Enter open  Backspace delete</Text>
         </Box>
       </Box>
     </Box>
