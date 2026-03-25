@@ -354,38 +354,38 @@ export function MessageInput({ onSend, disabled, placeholder }: Props) {
         setCursor(0);
         return;
       }
-      // Input history — Ctrl+P (previous) / Ctrl+N (next)
-      // Using Ctrl+P/N instead of arrows so scroll wheel works for chat scrollback
-      if (input === 'p') {
-        if (history.length === 0) return;
-        if (historyIndex === -1) {
-          setDraft(value);
-          const idx = history.length - 1;
-          setHistoryIndex(idx);
-          setValue(history[idx]!);
-          setCursor(history[idx]!.length);
-        } else if (historyIndex > 0) {
-          const idx = historyIndex - 1;
-          setHistoryIndex(idx);
-          setValue(history[idx]!);
-          setCursor(history[idx]!.length);
-        }
-        return;
+    }
+
+    // Input history — up/down arrow recall previous messages
+    if (key.upArrow) {
+      if (history.length === 0) return;
+      if (historyIndex === -1) {
+        setDraft(value);
+        const idx = history.length - 1;
+        setHistoryIndex(idx);
+        setValue(history[idx]!);
+        setCursor(history[idx]!.length);
+      } else if (historyIndex > 0) {
+        const idx = historyIndex - 1;
+        setHistoryIndex(idx);
+        setValue(history[idx]!);
+        setCursor(history[idx]!.length);
       }
-      if (input === 'n') {
-        if (historyIndex === -1) return;
-        if (historyIndex < history.length - 1) {
-          const idx = historyIndex + 1;
-          setHistoryIndex(idx);
-          setValue(history[idx]!);
-          setCursor(history[idx]!.length);
-        } else {
-          setHistoryIndex(-1);
-          setValue(draft);
-          setCursor(draft.length);
-        }
-        return;
+      return;
+    }
+    if (key.downArrow) {
+      if (historyIndex === -1) return;
+      if (historyIndex < history.length - 1) {
+        const idx = historyIndex + 1;
+        setHistoryIndex(idx);
+        setValue(history[idx]!);
+        setCursor(history[idx]!.length);
+      } else {
+        setHistoryIndex(-1);
+        setValue(draft);
+        setCursor(draft.length);
       }
+      return;
     }
 
     // Ignore remaining control keys
