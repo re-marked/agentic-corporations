@@ -308,6 +308,11 @@ export class MessageRouter {
         channelId: channel.id,
       });
 
+      // Pick WebSocket client based on agent mode (remote = user OpenClaw, gateway = corp gateway)
+      const wsClient = agentProc.mode === 'remote'
+        ? this.daemon.openclawWS
+        : this.daemon.corpGatewayWS;
+
       const result = await dispatchToAgent(
         agentProc,
         messageContent,
@@ -319,13 +324,47 @@ export class MessageRouter {
             content: accumulated,
             channelId: channel.id,
           });
-          // Push streaming tokens to TUI via WebSocket
           this.daemon.events.broadcast({
             type: 'stream_token',
             agentName: target.displayName,
             channelId: channel.id,
             content: accumulated,
           });
+        },
+        wsClient,
+        {
+          onToolStart: (tool) => {
+            this.daemon.events.broadcast({
+              type: 'tool_start',
+              agentName: target.displayName,
+              channelId: channel.id,
+              toolName: tool.name,
+              args: tool.args,
+            });
+            // Write tool_event to JSONL for permanent history
+            const toolMsg: ChannelMessage = {
+              id: generateId(),
+              channelId: channel.id,
+              senderId: targetId,
+              threadId: msg.threadId,
+              content: this.formatToolMessage(tool.name, tool.args),
+              kind: 'tool_event',
+              mentions: [],
+              metadata: { source: 'router', toolName: tool.name, toolCallId: tool.toolCallId },
+              depth: msg.depth + 1,
+              originId: msg.originId,
+              timestamp: new Date().toISOString(),
+            };
+            appendMessage(join(this.daemon.corpRoot, channel.path, MESSAGES_JSONL), toolMsg);
+          },
+          onToolEnd: (tool) => {
+            this.daemon.events.broadcast({
+              type: 'tool_end',
+              agentName: target.displayName,
+              channelId: channel.id,
+              toolName: tool.name,
+            });
+          },
         },
       );
 
@@ -376,6 +415,31 @@ export class MessageRouter {
       // Still drain queue on error — next task might succeed
       this.drainQueue(targetId);
     }
+  }
+
+  /** Format a tool call into a human-readable message for the chat history. */
+  private formatToolMessage(toolName: string, args?: Record<string, unknown>): string {
+    const name = toolName.toLowerCase();
+    if ((name === 'write' || name === 'create') && args?.path) {
+      return `wrote ${args.path}`;
+    }
+    if (name === 'edit' && args?.file_path) {
+      return `edited ${args.file_path}`;
+    }
+    if (name === 'read' && (args?.path || args?.file_path)) {
+      return `read ${args.path ?? args.file_path}`;
+    }
+    if (name === 'bash' || name === 'execute') {
+      const cmd = String(args?.command ?? args?.cmd ?? '').substring(0, 60);
+      return cmd ? `ran \`${cmd}\`` : `ran a command`;
+    }
+    if (name === 'glob' || name === 'search') {
+      return `searched ${args?.pattern ?? 'files'}`;
+    }
+    if (name === 'grep') {
+      return `searched for "${args?.pattern ?? '...'}"`;
+    }
+    return `used ${toolName}`;
   }
 
   /** Process the next queued message for an agent after their current dispatch finishes. */
