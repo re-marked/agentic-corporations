@@ -112,6 +112,16 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
     if (key.ctrl && input === 'm') {
       setShowMemberSidebar(prev => !prev);
     }
+    // Ctrl+Y — open/close thread view (Ctrl+T is task board)
+    if (key.ctrl && input === 'y') {
+      if (activeThread) {
+        setActiveThread(undefined);
+      } else {
+        // Open the thread with most replies
+        const sorted = [...threadCounts.entries()].sort((a, b) => b[1] - a[1]);
+        if (sorted.length > 0) setActiveThread(sorted[0]![0]);
+      }
+    }
   });
 
   const writeSystemMessage = (content: string) => {
@@ -735,7 +745,11 @@ Always consider what happens when things go wrong.`,
         </Box>
         <Text wrap="wrap">{renderContent(msg.content, memberMap)}</Text>
         {replyCount > 0 && !activeThread && (
-          <Text color={COLORS.info}>  {'\u2514\u2500'} {replyCount} {replyCount === 1 ? 'reply' : 'replies'}</Text>
+          <Box borderStyle="round" borderColor={COLORS.muted} paddingX={1} marginTop={0} marginLeft={2}>
+            <Text color={COLORS.info} bold>Thread</Text>
+            <Text color={COLORS.subtle}> — {replyCount} {replyCount === 1 ? 'reply' : 'replies'}. </Text>
+            <Text color={COLORS.muted}>C-Y to open</Text>
+          </Box>
         )}
       </Box>
     );
@@ -776,7 +790,7 @@ Always consider what happens when things go wrong.`,
         disabled={sending}
         placeholder="Type a message... (/hire to add agents)"
       />
-      <Text color={COLORS.muted}> {activeThread ? `Thread in #${channel.name}  /t:back` : `#${channel.name}`}  C-K:palette  C-H:home  C-T:tasks  C-M:members  Esc:back</Text>
+      <Text color={COLORS.muted}> {activeThread ? `Thread in #${channel.name}  C-Y:close` : `#${channel.name}`}  C-K:palette  C-H:home  C-T:tasks  C-Y:thread  C-M:members  Esc:back</Text>
     </Box>
   );
 }
