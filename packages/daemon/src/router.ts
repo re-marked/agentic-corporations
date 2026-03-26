@@ -194,10 +194,34 @@ export class MessageRouter {
     };
     if (!sender && msg.senderId !== 'system') return;
 
+    // Channel mode check — announce channels don't dispatch
+    const channelMode = channel.mode ?? (channel.kind === 'direct' ? 'open' : 'mention');
+    if (channelMode === 'announce') {
+      log(`[router] #${channel.name} is announce-mode — no dispatch`);
+      return;
+    }
+
     // Find dispatch targets
     let targetIds: string[] = [];
 
-    if (channel.kind === 'direct') {
+    if (msg.threadId) {
+      // Thread message — dispatch to thread participants + @mentioned only
+      const msgPath = join(this.daemon.corpRoot, channel.path, MESSAGES_JSONL);
+      const recent = tailMessages(msgPath, 100);
+      const threadMsgs = recent.filter(
+        (m) => m.threadId === msg.threadId || m.id === msg.threadId,
+      );
+      const participantIds = new Set(threadMsgs.map((m) => m.senderId));
+      const mentionedIds = resolveMentions(msg.content, members);
+      for (const id of mentionedIds) participantIds.add(id);
+      // Remove the sender, keep only agents
+      participantIds.delete(msg.senderId);
+      targetIds = [...participantIds].filter((id) => {
+        const m = members.find((mem) => mem.id === id);
+        return m && m.type === 'agent';
+      });
+      log(`[router] Thread dispatch: ${targetIds.length} participants`);
+    } else if (channel.kind === 'direct') {
       // DM: auto-route to the other member
       const otherId = channel.memberIds.find((id) => id !== msg.senderId);
       if (otherId) {
@@ -267,10 +291,14 @@ export class MessageRouter {
     // Track cooldown for all dispatches
     this.lastDispatch.set(targetId, Date.now());
 
-    // Load recent channel history for context
+    // Load recent channel history for context — thread-aware
     const msgPath = join(this.daemon.corpRoot, channel.path, MESSAGES_JSONL);
-    const recent = tailMessages(msgPath, 50);
-    const recentHistory = recent.map((m) => {
+    const allRecent = tailMessages(msgPath, 100);
+    // If dispatching about a thread, show thread history. Otherwise main channel only.
+    const recent = msg.threadId
+      ? allRecent.filter((m) => m.threadId === msg.threadId || m.id === msg.threadId)
+      : allRecent.filter((m) => !m.threadId);
+    const recentHistory = recent.slice(-50).map((m) => {
       const s = members.find((mem) => mem.id === m.senderId);
       const name = s?.displayName ?? 'Unknown';
       const rank = s?.rank ?? '';
@@ -376,24 +404,88 @@ export class MessageRouter {
         channelId: channel.id,
       });
 
-      // Write agent response to JSONL
-      log(`[router] WRITING ${target.displayName}'s response (${result.content.length} chars) "${result.content.substring(0, 80)}"`);
-      const responseMsg: ChannelMessage = {
+      // Parse [thread] marker — split into main channel + thread parts
+      const threadMarkerIdx = result.content.indexOf('[thread]');
+      let mainContent = result.content;
+      let threadContent: string | null = null;
+      let responseThreadId = msg.threadId;
+
+      if (threadMarkerIdx !== -1) {
+        mainContent = result.content.slice(0, threadMarkerIdx).trim();
+        threadContent = result.content.slice(threadMarkerIdx + '[thread]'.length).trim();
+        responseThreadId = msg.threadId ?? msg.id;
+        log(`[router] ${target.displayName} split response: main=${mainContent.length} chars, thread=${threadContent.length} chars`);
+      }
+
+      const msgPath = join(this.daemon.corpRoot, channel.path, MESSAGES_JSONL);
+
+      // If agent used [thread] at the very start (no main content), entire response is threaded
+      if (threadContent && !mainContent) {
+        const threadMsg: ChannelMessage = {
+          id: generateId(),
+          channelId: channel.id,
+          senderId: targetId,
+          threadId: responseThreadId,
+          content: threadContent,
+          kind: 'text',
+          mentions: resolveMentions(threadContent, members),
+          metadata: { source: 'router' },
+          depth: msg.depth + 1,
+          originId: msg.originId,
+          timestamp: new Date().toISOString(),
+        };
+        log(`[router] WRITING ${target.displayName}'s threaded response (${threadContent.length} chars)`);
+        appendMessage(msgPath, threadMsg);
+        const responseMsg = threadMsg;
+
+        log(`[router] ${target.displayName} responded in thread in #${channel.name}`);
+        this.daemon.streaming.delete(targetId);
+        this.activeDispatches.delete(target.displayName);
+        this.daemon.events.broadcast({ type: 'stream_end', agentName: target.displayName, channelId: channel.id });
+        this.daemon.gitManager.markDirty(target.displayName);
+        this.drainQueue(targetId);
+        return;
+      }
+
+      // Write main channel response
+      const mainMsg: ChannelMessage = {
         id: generateId(),
         channelId: channel.id,
         senderId: targetId,
         threadId: msg.threadId,
-        content: result.content,
+        content: mainContent,
         kind: 'text',
-        mentions: resolveMentions(result.content, members),
+        mentions: resolveMentions(mainContent, members),
         metadata: { source: 'router' },
         depth: msg.depth + 1,
         originId: msg.originId,
         timestamp: new Date().toISOString(),
       };
 
-      const msgPath = join(this.daemon.corpRoot, channel.path, MESSAGES_JSONL);
-      appendMessage(msgPath, responseMsg);
+      log(`[router] WRITING ${target.displayName}'s response (${mainContent.length} chars) "${mainContent.substring(0, 80)}"`);
+      appendMessage(msgPath, mainMsg);
+
+      // Write thread portion as a separate message if it exists
+      if (threadContent && mainContent) {
+        const threadMsg: ChannelMessage = {
+          id: generateId(),
+          channelId: channel.id,
+          senderId: targetId,
+          threadId: responseThreadId,
+          content: threadContent,
+          kind: 'text',
+          mentions: resolveMentions(threadContent, members),
+          metadata: { source: 'router' },
+          depth: msg.depth + 1,
+          originId: msg.originId,
+          timestamp: new Date().toISOString(),
+        };
+        appendMessage(msgPath, threadMsg);
+        log(`[router] WRITING ${target.displayName}'s thread reply (${threadContent.length} chars)`);
+      }
+
+      // Use mainMsg as the "responseMsg" for the rest of the flow
+      const responseMsg = mainMsg;
 
       log(`[router] ${target.displayName} responded in #${channel.name}`);
 
