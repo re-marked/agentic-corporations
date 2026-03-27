@@ -245,7 +245,7 @@ Cross items off as they ship. Reference: `docs/` for full vision specs.
 
 - [ ] Custom themes (name your own ranks)
 - [x] ~~Multiline paste support~~ — v0.4: bracketed paste mode with mixed typed + pasted content
-- [ ] Thread support (threadId in messages)
+- [x] ~~Thread support~~ — v0.6.0: [thread] prefix, thread-aware dispatch, thread cards (TUI WIP)
 - [ ] Agent suspension/resume/archival
 - [ ] Git Janitor agent
 - [ ] Starter pack: CEO bootstraps agents from conversation
@@ -278,4 +278,7 @@ Cross items off as they ship. Reference: `docs/` for full vision specs.
 12. ~~**State** — CorpContext, useCorp(), centralized state~~
 13. ~~**Escalation** — 5-level chain, BLOCKED auto-notify, blocker resolution loop~~
 14. ~~**TUI polish** — alt screen, input history, readline, URLs, crash cleanup~~
-15. **Next**: steampunk rebuild, /assign, /standup, thread support
+15. ~~**WebSocket dispatch** — tool event visibility, real-time tool calls in TUI~~
+16. ~~**Threads + channel modes** — [thread] prefix, announce/mention/open modes, debate protocol~~
+17. ~~**Skills system** — 17 bundled Anthropic skills, auto-sync to all agents~~
+18. **Next (v0.8.0)**: Model selector — corp-wide default + per-agent override, fallback chain (Opus → Sonnet → Haiku), hot reload, /model TUI command
