@@ -71,7 +71,7 @@ export function setupAgentWorkspace(opts: AgentSetupOpts): AgentSetupResult {
 
   // Write workspace files
   writeFileSync(join(agentAbsDir, 'SOUL.md'), soulContent, 'utf-8');
-  writeFileSync(join(agentAbsDir, 'AGENTS.md'), agentsContent, 'utf-8');
+  writeFileSync(join(agentAbsDir, 'RULES.md'), agentsContent, 'utf-8');
   writeFileSync(join(agentAbsDir, 'MEMORY.md'), '# Memory\n\nNo memories yet.\n', 'utf-8');
   writeFileSync(join(agentAbsDir, 'HEARTBEAT.md'), heartbeatContent, 'utf-8');
   if (identityContent) {
