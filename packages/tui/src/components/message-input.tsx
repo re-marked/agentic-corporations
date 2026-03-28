@@ -487,8 +487,8 @@ export function MessageInput({ onSend, disabled, placeholder }: Props) {
           <Text color="#636E72"> — show daemon uptime and message count</Text>
         </Box>
       )}
-      <Box borderStyle="round" borderColor={disabled ? '#4B5257' : '#7B8C94'} paddingX={1}>
-        <Text bold color="#E17055">&gt; </Text>
+      <Box borderStyle="round" borderColor={disabled ? '#3D3A36' : '#5C5751'} paddingX={1} marginTop={1}>
+        <Text bold color="#C2785C">&gt; </Text>
         {disabled ? (
           <Text color="#636E72">{placeholder ?? 'Waiting...'}</Text>
         ) : value.length === 0 ? (

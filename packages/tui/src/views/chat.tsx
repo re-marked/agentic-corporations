@@ -743,9 +743,8 @@ Always consider what happens when things go wrong.`,
 
     if (isSystem) {
       return (
-        <Box key={msg.id} flexDirection="column">
-          <Text color={COLORS.muted}> {'\u250A'} {name} {time}</Text>
-          <Text color={COLORS.muted}> {'\u250A'} {msg.content}</Text>
+        <Box key={msg.id} flexDirection="column" paddingLeft={1} marginBottom={0}>
+          <Text color={COLORS.muted}> {'\u2502'} {msg.content}</Text>
         </Box>
       );
     }
@@ -753,8 +752,8 @@ Always consider what happens when things go wrong.`,
     // Tool events — compact inline display
     if (msg.kind === 'tool_event') {
       return (
-        <Box key={msg.id} gap={1}>
-          <Text color={COLORS.muted}> {'\u250A'}</Text>
+        <Box key={msg.id} gap={1} paddingLeft={1}>
+          <Text color={COLORS.muted}> {'\u2502'}</Text>
           <Text color={COLORS.agent}>{name}</Text>
           <Text color={COLORS.subtle}>{msg.content}</Text>
         </Box>
@@ -762,18 +761,22 @@ Always consider what happens when things go wrong.`,
     }
 
     const replyCount = threadCounts.get(msg.id) ?? 0;
+    const isUser = sender?.type === 'user';
+    const nameColor = isUser ? COLORS.user : COLORS.agent;
     return (
-      <Box key={msg.id} flexDirection="column" marginBottom={1}>
+      <Box key={msg.id} flexDirection="column" marginBottom={1} paddingLeft={1}>
         <Box gap={1}>
-          <Text bold color={sender?.type === 'user' ? COLORS.user : COLORS.agent}>{name}</Text>
-          <Text color={COLORS.subtle}>{time}</Text>
+          <Text color={nameColor}>{'\u25CF'}</Text>
+          <Text bold color={nameColor}>{name}</Text>
+          <Text color={COLORS.muted}>{time}</Text>
         </Box>
-        <Text wrap="wrap">{renderContent(msg.content, memberMap)}</Text>
+        <Box paddingLeft={2}>
+          <Text wrap="wrap">{renderContent(msg.content, memberMap)}</Text>
+        </Box>
         {replyCount > 0 && !activeThread && (
-          <Box borderStyle="round" borderColor={COLORS.muted} paddingX={1} marginTop={0} marginLeft={2}>
-            <Text color={COLORS.info} bold>Thread</Text>
-            <Text color={COLORS.subtle}> — {replyCount} {replyCount === 1 ? 'reply' : 'replies'}. </Text>
-            <Text color={COLORS.muted}>C-Y to open</Text>
+          <Box paddingLeft={2} marginTop={0}>
+            <Text color={COLORS.info}>  {replyCount} {replyCount === 1 ? 'reply' : 'replies'}</Text>
+            <Text color={COLORS.muted}> \u00B7 C-Y to open</Text>
           </Box>
         )}
       </Box>
@@ -788,17 +791,20 @@ Always consider what happens when things go wrong.`,
       </Static>
       {/* Dynamic: streaming preview + indicators + input */}
       {hasStreamContent && (
-        <Box flexDirection="column" paddingX={1}>
-          <Box gap={1}>
+        <Box flexDirection="column" paddingX={1} marginTop={1}>
+          <Box gap={1} paddingLeft={1}>
+            <Text color={COLORS.agent}>{'\u25CF'}</Text>
             <Text bold color={COLORS.agent}>{channelStream!.agentName}</Text>
             <Spinner type="dots" />
           </Box>
-          <Text wrap="wrap">{channelStream!.content}</Text>
+          <Box paddingLeft={3}>
+            <Text wrap="wrap">{channelStream!.content}</Text>
+          </Box>
         </Box>
       )}
       {!hasStreamContent && (isStreaming || thinking || dispatchingAgents.length > 0) && (
-        <Box gap={1} paddingX={1}>
-          <Text color={COLORS.primary}><Spinner type="dots" /></Text>
+        <Box gap={1} paddingX={1} paddingLeft={2}>
+          <Text color={COLORS.info}><Spinner type="dots" /></Text>
           <Text color={COLORS.subtle}>
             {activeToolCall
               ? `${activeToolCall.agentName} ${activeToolCall.toolName}...`
