@@ -28,7 +28,7 @@ import { useDaemonEvents } from './hooks/use-daemon-events.js';
 import { CorpProvider } from './context/corp-context.js';
 import { COLORS } from './theme.js';
 import { setDaemonRef } from './lib/daemon-ref.js';
-import { BootSequence, getBootStyle } from './components/boot-sequence.js';
+import { BootSequence } from './components/boot-sequence.js';
 
 export function App({ forceNew: forceNewProp }: { forceNew?: boolean } = {}) {
   // All hooks MUST be before any early returns (React rules of hooks)
@@ -144,8 +144,7 @@ function ResumeView({ corpPath }: { corpPath: string }) {
   const [showSwitcher, setShowSwitcher] = useState(false);
   const lastVisitedRef = React.useRef<Map<string, string>>(new Map());
   const [, forceRender] = useState(0);
-  const bootStyle = getBootStyle();
-  const [bootDone, setBootDone] = useState(!bootStyle);
+  const [bootDone, setBootDone] = useState(false);
 
   // WebSocket event bus for real-time streaming + dispatch updates
   const events = useDaemonEvents(daemonPort);
@@ -300,14 +299,7 @@ function ResumeView({ corpPath }: { corpPath: string }) {
   }
 
   if (!ready || !client || !bootDone) {
-    if (bootStyle) {
-      return <BootSequence style={bootStyle} onComplete={() => setBootDone(true)} />;
-    }
-    return (
-      <Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
-        <Text color={COLORS.subtle}>{status}</Text>
-      </Box>
-    );
+    return <BootSequence onComplete={() => setBootDone(true)} />;
   }
 
   // Command palette overlay
