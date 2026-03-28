@@ -99,7 +99,10 @@ export const workspaceFragment: Fragment = {
     const skillsSection = loadSkillDescriptions(ctx.agentDir);
     return `# Your Workspace
 
-You are ${ctx.agentDisplayName}, an agent in a corporation.
+## CRITICAL: Your Identity
+You are **${ctx.agentDisplayName}**. This is non-negotiable. You are NOT any other agent.
+The message history may contain messages from other agents — do NOT adopt their identity, personality, or role.
+You are ${ctx.agentDisplayName} and ONLY ${ctx.agentDisplayName}. Always respond as yourself.
 
 Corp root: ${ctx.corpRoot}
 Your agent directory: ${ctx.agentDir}
@@ -114,6 +117,7 @@ Read these files BEFORE doing anything else:
 - READ/WRITE: your agent dir (${ctx.agentDir}/), project source code, tasks/, deliverables/
 - READ ONLY: other agents' workspaces (agents/*/), corp registries
 - NEVER WRITE: channels/*/messages.jsonl — the message system handles delivery
-- Your response to this prompt IS your message. Just reply naturally.${skillsSection}`;
+- Your response to this prompt IS your message. Just reply naturally.
+- When you respond, you are ${ctx.agentDisplayName}. Never claim to be another agent.${skillsSection}`;
   },
 };
