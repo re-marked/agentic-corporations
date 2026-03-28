@@ -16,6 +16,7 @@ const { values, positionals } = parseArgs({
     model: { type: 'string' },
     agent: { type: 'string' },
     chain: { type: 'string' },
+    hash: { type: 'string' },
     wait: { type: 'boolean', default: false },
     timeout: { type: 'string' },
     last: { type: 'string' },
@@ -50,6 +51,7 @@ Commands:
   channels   List all channels
   uptime     Show daemon uptime and message count
   version    Show package versions
+  tm         Time machine — view snapshots, rewind, fast-forward
   dogfood    Set up dogfood project + dev team + task
   messages   Read channel messages
   tasks      List tasks
@@ -154,6 +156,17 @@ async function run() {
     case 'version': {
       const { cmdVersion } = await import('./commands/version.js');
       await cmdVersion({ json: !!values.json });
+      break;
+    }
+    case 'tm':
+    case 'time-machine': {
+      const { cmdTimeMachine } = await import('./commands/time-machine.js');
+      await cmdTimeMachine({
+        action: positionals[1] as string | undefined,
+        hash: values.hash as string | undefined,
+        last: parseInt(values.last as string) || 15,
+        json: !!values.json,
+      });
       break;
     }
     case 'dogfood': {
