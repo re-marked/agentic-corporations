@@ -170,6 +170,23 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
       return;
     }
 
+    // /theme cycles through color palettes
+    if (text.trim().toLowerCase().startsWith('/theme')) {
+      const { PALETTE_NAMES, PALETTES, saveTheme, currentThemeName } = await import('../theme.js');
+      const arg = text.trim().split(/\s+/)[1]?.toLowerCase();
+      if (arg && PALETTES[arg]) {
+        saveTheme(arg);
+        writeSystemMessage(`Theme switched to ${arg}. Restart TUI to see full effect.`);
+      } else {
+        const current = currentThemeName();
+        const idx = PALETTE_NAMES.indexOf(current);
+        const next = PALETTE_NAMES[(idx + 1) % PALETTE_NAMES.length]!;
+        saveTheme(next);
+        writeSystemMessage(`Theme: ${next} (${PALETTE_NAMES.join(' | ')}). Restart TUI to see full effect.`);
+      }
+      return;
+    }
+
     // /task opens the task wizard
     if (text.trim().toLowerCase() === '/task') {
       setShowTaskWizard(true);
@@ -235,6 +252,7 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
         '  /uptime            Show daemon uptime and message count',
         '  /logs              Show recent daemon logs',
         '  /tm                Open Time Machine (rewind/forward any snapshot)',
+        '  /theme [name]      Switch color palette (coral|lavender|indigo|rose|mono)',
         '',
         '⚙️ Management:',
         '  /hire              Open agent hiring wizard',

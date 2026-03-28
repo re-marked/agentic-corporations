@@ -1,57 +1,200 @@
-/** Premium dark palette — neutral tone, colorful accents. */
-export const COLORS = {
-  // Brand
-  primary: '#E07B56',     // warm coral — accent, titles, active
-  secondary: '#F0C674',   // golden — highlights
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
 
-  // Semantic
-  success: '#6CC490',     // vivid green — completed, healthy
-  warning: '#F0C674',     // golden — assigned, idle, warnings
-  danger: '#E05A5A',      // clear red — failed, crashed, errors
-  info: '#6BAED6',        // sky blue — in_progress, working
+// --- Color Palette Definitions ---
 
-  // Neutral — clean gray, no yellow cast
-  text: '#E2E2E2',        // pure light gray — primary text
-  subtle: '#9E9E9E',      // mid gray — timestamps, secondary
-  muted: '#5A5A5A',       // dark gray — dim, offline, hints
-  border: '#3A3A3A',      // charcoal — borders
-  borderActive: '#E07B56', // coral — focused borders
+export interface ColorPalette {
+  name: string;
+  primary: string;
+  secondary: string;
+  success: string;
+  warning: string;
+  danger: string;
+  info: string;
+  text: string;
+  subtle: string;
+  muted: string;
+  border: string;
+  borderActive: string;
+  user: string;
+  agent: string;
+  ceo: 'rainbow';
+  system: string;
+}
 
-  // Agents
-  user: '#6CC490',        // green — user/founder messages
-  agent: '#6BAED6',       // sky blue — agent messages
-  ceo: 'rainbow' as const,
-  system: '#5A5A5A',      // gray — system messages
-} as const;
+const CORAL: ColorPalette = {
+  name: 'coral',
+  primary: '#E07B56',
+  secondary: '#F0C674',
+  success: '#6CC490',
+  warning: '#F0C674',
+  danger: '#E05A5A',
+  info: '#6BAED6',
+  text: '#E2E2E2',
+  subtle: '#9E9E9E',
+  muted: '#5A5A5A',
+  border: '#3A3A3A',
+  borderActive: '#E07B56',
+  user: '#6CC490',
+  agent: '#6BAED6',
+  ceo: 'rainbow',
+  system: '#5A5A5A',
+};
 
-/** Status indicators — clean, minimal. */
-export const STATUS = {
-  active: { icon: '\u25CF', color: COLORS.success },   // ●
-  working: { icon: '\u25CF', color: COLORS.info },      // ●
-  idle: { icon: '\u25CB', color: COLORS.warning },      // ○
-  suspended: { icon: '\u25CB', color: COLORS.muted },   // ○
-  archived: { icon: '\u2013', color: COLORS.muted },    // –
-  offline: { icon: '\u25CB', color: COLORS.muted },     // ○
-} as const;
+const LAVENDER: ColorPalette = {
+  name: 'lavender',
+  primary: '#A78BDB',
+  secondary: '#D4B96A',
+  success: '#7ED4A6',
+  warning: '#E8B87E',
+  danger: '#DB7E7E',
+  info: '#5BBFB5',
+  text: '#E4E2EA',
+  subtle: '#9A98A4',
+  muted: '#5A5864',
+  border: '#3A3842',
+  borderActive: '#A78BDB',
+  user: '#DB8BA7',
+  agent: '#5BBFB5',
+  ceo: 'rainbow',
+  system: '#5A5864',
+};
 
-/** Task status indicators. */
-export const TASK_STATUS = {
-  pending: { icon: '\u25CB', color: COLORS.muted },     // ○
-  assigned: { icon: '\u25CF', color: COLORS.warning },   // ●
-  in_progress: { icon: '\u25CF', color: COLORS.info },   // ●
-  blocked: { icon: '\u25CF', color: COLORS.danger },     // ●
-  completed: { icon: '\u2713', color: COLORS.success },  // ✓
-  failed: { icon: '\u2717', color: COLORS.danger },      // ✗
-  cancelled: { icon: '\u2013', color: COLORS.muted },    // –
-} as const;
+const INDIGO: ColorPalette = {
+  name: 'indigo',
+  primary: '#6B7FD7',
+  secondary: '#D4B96A',
+  success: '#5CB88A',
+  warning: '#D4A94E',
+  danger: '#D46B6B',
+  info: '#6B9FD7',
+  text: '#E0E0E8',
+  subtle: '#9898A8',
+  muted: '#585868',
+  border: '#383848',
+  borderActive: '#6B7FD7',
+  user: '#7EC8A0',
+  agent: '#D4B96A',
+  ceo: 'rainbow',
+  system: '#585868',
+};
 
-/** Task priority colors. */
-export const PRIORITY = {
-  critical: '#E05A5A',
-  high: '#E07B56',
-  normal: '#E2E2E2',
-  low: '#5A5A5A',
-} as const;
+const ROSE: ColorPalette = {
+  name: 'rose',
+  primary: '#C87E8A',
+  secondary: '#D4B86A',
+  success: '#6CC490',
+  warning: '#D4B86A',
+  danger: '#D46B6B',
+  info: '#7E9BB5',
+  text: '#E8E4E0',
+  subtle: '#A49E98',
+  muted: '#5E5A56',
+  border: '#3E3A36',
+  borderActive: '#C87E8A',
+  user: '#8AB89C',
+  agent: '#7E9BB5',
+  ceo: 'rainbow',
+  system: '#5E5A56',
+};
 
-/** Border style for all views. */
+const MONO: ColorPalette = {
+  name: 'mono',
+  primary: '#CCCCCC',
+  secondary: '#AAAAAA',
+  success: '#6ABF69',
+  warning: '#D4C44A',
+  danger: '#D45A5A',
+  info: '#CCCCCC',
+  text: '#E8E8E8',
+  subtle: '#999999',
+  muted: '#555555',
+  border: '#383838',
+  borderActive: '#CCCCCC',
+  user: '#E8E8E8',
+  agent: '#CCCCCC',
+  ceo: 'rainbow',
+  system: '#555555',
+};
+
+export const PALETTES: Record<string, ColorPalette> = {
+  coral: CORAL,
+  lavender: LAVENDER,
+  indigo: INDIGO,
+  rose: ROSE,
+  mono: MONO,
+};
+
+export const PALETTE_NAMES = Object.keys(PALETTES) as string[];
+
+// --- Theme State ---
+
+const THEME_PATH = join(homedir(), '.claudecorp', '.theme');
+
+function loadThemeName(): string {
+  try {
+    if (existsSync(THEME_PATH)) {
+      const name = readFileSync(THEME_PATH, 'utf-8').trim();
+      if (PALETTES[name]) return name;
+    }
+  } catch {}
+  return 'coral';
+}
+
+export function saveTheme(name: string): void {
+  if (!PALETTES[name]) return;
+  try { writeFileSync(THEME_PATH, name, 'utf-8'); } catch {}
+  // Update live COLORS
+  Object.assign(COLORS, PALETTES[name]!);
+  Object.assign(STATUS, buildStatus());
+  Object.assign(TASK_STATUS, buildTaskStatus());
+  Object.assign(PRIORITY, buildPriority());
+}
+
+export function currentThemeName(): string {
+  return loadThemeName();
+}
+
+// --- Live palette (mutable, updated by saveTheme) ---
+
+const initial = PALETTES[loadThemeName()]!;
+
+export const COLORS: ColorPalette = { ...initial };
+
+function buildStatus() {
+  return {
+    active: { icon: '\u25CF', color: COLORS.success },
+    working: { icon: '\u25CF', color: COLORS.info },
+    idle: { icon: '\u25CB', color: COLORS.warning },
+    suspended: { icon: '\u25CB', color: COLORS.muted },
+    archived: { icon: '\u2013', color: COLORS.muted },
+    offline: { icon: '\u25CB', color: COLORS.muted },
+  };
+}
+
+function buildTaskStatus() {
+  return {
+    pending: { icon: '\u25CB', color: COLORS.muted },
+    assigned: { icon: '\u25CF', color: COLORS.warning },
+    in_progress: { icon: '\u25CF', color: COLORS.info },
+    blocked: { icon: '\u25CF', color: COLORS.danger },
+    completed: { icon: '\u2713', color: COLORS.success },
+    failed: { icon: '\u2717', color: COLORS.danger },
+    cancelled: { icon: '\u2013', color: COLORS.muted },
+  };
+}
+
+function buildPriority() {
+  return {
+    critical: COLORS.danger,
+    high: COLORS.primary,
+    normal: COLORS.text,
+    low: COLORS.muted,
+  };
+}
+
+export const STATUS = buildStatus();
+export const TASK_STATUS = buildTaskStatus();
+export const PRIORITY = buildPriority();
 export const BORDER_STYLE = 'round' as const;
