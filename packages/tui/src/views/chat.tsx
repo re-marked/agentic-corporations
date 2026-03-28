@@ -17,6 +17,7 @@ import { MessageInput } from '../components/message-input.js';
 import { MemberSidebar } from '../components/member-sidebar.js';
 import { useMessages } from '../hooks/use-messages.js';
 import { HireWizard } from './hire-wizard.js';
+import { ModelWizard } from './model-wizard.js';
 import { COLORS, BORDER_STYLE } from '../theme.js';
 import { TaskWizard } from './task-wizard.js';
 import { ProjectWizard } from './project-wizard.js';
@@ -52,6 +53,7 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
   const [thinkingAgents, setThinkingAgents] = useState<string[]>([]);
   const [members, setMembers] = useState(ctxMembers);
   const [showHireWizard, setShowHireWizard] = useState(false);
+  const [showModelWizard, setShowModelWizard] = useState(false);
   const [showTaskWizard, setShowTaskWizard] = useState(false);
   const [showProjectWizard, setShowProjectWizard] = useState(false);
   const [showTeamWizard, setShowTeamWizard] = useState(false);
@@ -109,7 +111,7 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
   const memberMap = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
 
   useInput((input, key) => {
-    if (showHireWizard) return;
+    if (showHireWizard || showModelWizard) return;
     if (key.ctrl && input === 'm') {
       setShowMemberSidebar(prev => !prev);
     }
@@ -159,6 +161,12 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
     // /hire opens the wizard
     if (text.trim().toLowerCase() === '/hire') {
       setShowHireWizard(true);
+      return;
+    }
+
+    // /model opens the model selector
+    if (text.trim().toLowerCase() === '/model') {
+      setShowModelWizard(true);
       return;
     }
 
@@ -230,6 +238,7 @@ export function ChatView({ channel, messagesPath, streamData, dispatchingAgents 
         '',
         '⚙️ Management:',
         '  /hire              Open agent hiring wizard',
+        '  /model             View and change AI models',
         '  /task              Open task creation wizard',
         '  /project           Open project creation wizard',
         '  /team              Open team creation wizard',
@@ -701,6 +710,21 @@ Always consider what happens when things go wrong.`,
           founderId={founder?.id ?? ''}
           onClose={() => setShowHireWizard(false)}
           onHired={handleHired}
+        />
+      </Box>
+    );
+  }
+
+  if (showModelWizard) {
+    return (
+      <Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
+        <ModelWizard
+          daemonClient={daemonClient}
+          onClose={() => setShowModelWizard(false)}
+          onChanged={(target, model) => {
+            writeSystemMessage(`Model changed: ${target} → ${model}`);
+            setTimeout(() => setShowModelWizard(false), 1500);
+          }}
         />
       </Box>
     );

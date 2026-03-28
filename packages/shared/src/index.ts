@@ -96,3 +96,16 @@ export type { Theme, ThemeId } from './themes.js';
 // Tasks
 export { createTask, readTask, updateTask, listTasks, taskPath } from './tasks.js';
 export type { CreateTaskOpts, TaskFilter, TaskWithBody } from './tasks.js';
+
+// Models
+export {
+  KNOWN_MODELS,
+  DEFAULT_FALLBACK_CHAIN,
+  resolveModelAlias,
+  getModelEntry,
+  formatProviderModel,
+  parseProviderModel,
+  modelDisplayName,
+  modelAlias,
+} from './models.js';
+export type { ModelEntry } from './models.js';
