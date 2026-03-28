@@ -125,6 +125,7 @@ async function run() {
         name: values.name as string,
         rank: values.rank as string,
         soul: values.soul as string | undefined,
+        model: values.model as string | undefined,
         json: !!values.json,
       });
       break;
