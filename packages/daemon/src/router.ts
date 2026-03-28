@@ -345,7 +345,7 @@ export class MessageRouter {
         agentProc,
         messageContent,
         context,
-        `channel-${channel.id}-${msg.id}`,
+        `agent:${agentProc.model.replace('openclaw:', '')}:channel-${channel.id}-${msg.id}`,
         (accumulated) => {
           this.daemon.streaming.set(targetId, {
             agentName: target.displayName,
